@@ -187,3 +187,20 @@ html {
   min-height: 100vh;
   background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
 }
+
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Hide scrollbars for all scrollable areas in the bounties page */
+.bounties-scroll-area {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.bounties-scroll-area::-webkit-scrollbar {
+  display: none;
+}

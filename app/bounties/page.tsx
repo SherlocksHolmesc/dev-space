@@ -217,7 +217,7 @@ export default function BountiesPage() {
     <div className="min-h-screen space-bg">
       <div className="flex h-screen">
         {/* Main Content */}
-        <div className="flex-1 overflow-y-auto space-bg">
+        <div className="flex-1 overflow-y-auto space-bg bounties-scroll-area">
           <div className="p-6 min-h-full">
             {!showHistoryDetails ? (
               <>
@@ -284,9 +284,9 @@ export default function BountiesPage() {
                 </div>
 
                 {/* Two Column Bounties Layout */}
-                <div className="grid grid-cols-2 gap-6 pb-20">
+                <div className="grid grid-cols-2 gap-6 pb-20 max-h-[600px] overflow-y-auto pr-2 hide-scrollbar">
                   {/* Left Column */}
-                  <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                  <div className="space-y-4">
                     {mockBounties
                       .filter((_, index) => index % 2 === 0)
                       .map((bounty) => (
@@ -342,7 +342,7 @@ export default function BountiesPage() {
                   </div>
 
                   {/* Right Column */}
-                  <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                  <div className="space-y-4">
                     {mockBounties
                       .filter((_, index) => index % 2 === 1)
                       .map((bounty) => (
@@ -697,7 +697,7 @@ export default function BountiesPage() {
         </div>
 
         {/* Right Panel - Bounty History */}
-        <div className="w-80 space-bg border-l border-orange-500/20 overflow-y-auto">
+        <div className="w-80 space-bg border-l border-orange-500/20 overflow-y-auto bounties-scroll-area">
           <div className="p-6 min-h-full">
             <div className="flex items-center gap-2 mb-6">
               <History className="w-5 h-5 text-orange-500" />
