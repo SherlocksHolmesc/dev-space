@@ -145,7 +145,7 @@ export default function BlogsPage() {
     <div className="min-h-screen space-bg">
       <div className="flex h-screen">
         {/* Main Content - Posts List */}
-        <div className={`transition-all duration-300 ${selectedPost ? "w-1/3" : "w-full"} overflow-y-auto space-bg`}>
+        <div className={`transition-all duration-300 ${selectedPost ? "w-2/3" : "w-full"} overflow-y-auto space-bg`}>
           <div className="p-6">
             {/* Header */}
             <div className="mb-6">
@@ -261,9 +261,9 @@ export default function BlogsPage() {
           </div>
         </div>
 
-        {/* Middle Panel - Post Content */}
+        {/* Right Panel - Post Details + Comments Section */}
         {selectedPost && (
-          <div className="w-1/3 h-full space-bg border-l border-r border-orange-500/20 overflow-y-auto">
+          <div className="w-1/3 h-full space-bg border-l border-orange-500/20 overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-semibold text-orange-500">📖 Post Details</h3>
@@ -278,7 +278,7 @@ export default function BlogsPage() {
               </div>
 
               {/* Post Content */}
-              <Card className="space-card">
+              <Card className="space-card mb-6">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-4">
                     <Avatar>
@@ -325,14 +325,8 @@ export default function BlogsPage() {
                   </div>
                 </CardContent>
               </Card>
-            </div>
-          </div>
-        )}
 
-        {/* Right Panel - Comments Section */}
-        {selectedPost && (
-          <div className="w-1/3 h-full space-bg overflow-y-auto">
-            <div className="p-6">
+              {/* Comments Section */}
               <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                 <MessageCircle className="w-5 h-5 text-orange-500" />💬 Comments ({comments.length})
               </h4>
@@ -399,7 +393,7 @@ export default function BlogsPage() {
                           </div>
                           <p className="text-sm text-gray-300 leading-relaxed">{comment.content}</p>
                         </div>
-                      </div>
+                      </div>                                                      
                     </CardContent>
                   </Card>
                 ))}
