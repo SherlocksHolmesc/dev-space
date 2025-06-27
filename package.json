@@ -2,6 +2,8 @@
   "name": "my-v0-project",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
+  "main": "wallet/index.js",
   "scripts": {
     "build": "next build",
     "dev": "next dev",
@@ -38,6 +40,7 @@
     "@radix-ui/react-toggle-group": "latest",
     "@radix-ui/react-tooltip": "latest",
     "autoprefixer": "^10.4.21",
+    "axios": "^1.10.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "latest",
