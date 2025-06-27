@@ -22,6 +22,7 @@ interface BlogPost {
   views: number
   timeAgo: string
   level: number
+  isLiked: boolean
 }
 
 interface Comment {
@@ -50,6 +51,7 @@ const mockPosts: BlogPost[] = [
     views: 156,
     timeAgo: "2 hours ago",
     level: 7,
+    isLiked: false,
   },
   {
     id: 2,
@@ -65,6 +67,7 @@ const mockPosts: BlogPost[] = [
     views: 89,
     timeAgo: "4 hours ago",
     level: 3,
+    isLiked: false,
   },
 ]
 
@@ -108,6 +111,7 @@ export default function BlogsPage() {
   const [showCreatePost, setShowCreatePost] = useState(false)
   const [newComment, setNewComment] = useState("")
   const [comments, setComments] = useState<Comment[]>(mockComments)
+  const [posts, setPosts] = useState<BlogPost[]>(mockPosts)
   const [sidebarWidth, setSidebarWidth] = useState(400) // Default width in pixels
   const [isResizing, setIsResizing] = useState(false)
 
@@ -117,6 +121,41 @@ export default function BlogsPage() {
 
   const handleCloseDetails = () => {
     setSelectedPost(null)
+  }
+
+  const handleLike = (postId: number) => {
+    setPosts(posts.map(post => {
+      if (post.id === postId) {
+        const newLikes = post.isLiked ? post.likes - 1 : post.likes + 1
+        const updatedPost = { ...post, likes: newLikes, isLiked: !post.isLiked }
+        
+        // Also update selectedPost if it's the same post
+        if (selectedPost && selectedPost.id === postId) {
+          setSelectedPost(updatedPost)
+        }
+        
+        return updatedPost
+      }
+      return post
+    }))
+  }
+
+  const handleAddComment = () => {
+    if (newComment.trim() === '') return
+
+    const newCommentObj: Comment = {
+      id: comments.length + 1,
+      author: "You",
+      avatar: "/placeholder-user.jpg",
+      content: newComment.trim(),
+      timeAgo: "Just now",
+      votes: 0,
+      userVote: null,
+      level: 5,
+    }
+
+    setComments([newCommentObj, ...comments])
+    setNewComment("")
   }
 
   const handleVote = (commentId: number, voteType: "up" | "down") => {
@@ -239,7 +278,7 @@ export default function BlogsPage() {
 
             {/* Posts List */}
             <div className="space-y-4">
-              {mockPosts.map((post) => (
+              {posts.map((post) => (
                 <Card key={post.id} className="space-card cursor-pointer" onClick={() => handlePostClick(post)}>
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
@@ -285,8 +324,14 @@ export default function BlogsPage() {
                         ))}
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-400">
-                        <div className="flex items-center gap-1">
-                          <ThumbsUp className="w-4 h-4" />
+                        <div 
+                          className="flex items-center gap-1 cursor-pointer hover:text-orange-500 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleLike(post.id)
+                          }}
+                        >
+                          <ThumbsUp className={`w-4 h-4 ${post.isLiked ? 'text-orange-500 fill-orange-500' : ''}`} />
                           {post.likes}
                         </div>
                         <div className="flex items-center gap-1">
@@ -371,8 +416,13 @@ export default function BlogsPage() {
                   </div>
 
                   <div className="flex items-center gap-4 text-sm text-gray-400">
-                    <Button variant="ghost" size="sm" className="text-orange-500 hover:text-orange-400 p-0">
-                      <ThumbsUp className="w-4 h-4 mr-1" />
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className={`${selectedPost.isLiked ? 'text-orange-500 hover:text-orange-400' : 'text-gray-400 hover:text-orange-500'} p-0`}
+                      onClick={() => handleLike(selectedPost.id)}
+                    >
+                      <ThumbsUp className={`w-4 h-4 mr-1 ${selectedPost.isLiked ? 'fill-orange-500' : ''}`} />
                       {selectedPost.likes}
                     </Button>
                     <div className="flex items-center gap-1">
@@ -399,9 +449,20 @@ export default function BlogsPage() {
                     placeholder="Share your thoughts..."
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        handleAddComment()
+                      }
+                    }}
                     className="bg-gray-800/50 border-gray-600 text-white mb-3"
                   />
-                  <Button size="sm" className="gradient-orange text-black">
+                  <Button 
+                    size="sm" 
+                    className="gradient-orange text-black"
+                    onClick={handleAddComment}
+                    disabled={newComment.trim() === ''}
+                  >
                     <Send className="w-4 h-4 mr-2" />
                     Comment
                   </Button>
