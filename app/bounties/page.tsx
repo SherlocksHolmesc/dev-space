@@ -174,6 +174,8 @@ const mockHistory: BountyHistory[] = [
 export default function BountiesPage() {
   const [selectedHistory, setSelectedHistory] = useState<BountyHistory | null>(null)
   const [showHistoryDetails, setShowHistoryDetails] = useState(false)
+  const [selectedBounty, setSelectedBounty] = useState<Bounty | null>(null)
+  const [showBountyDetails, setShowBountyDetails] = useState(false)
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -206,9 +208,20 @@ export default function BountiesPage() {
   const handleHistoryClick = (history: BountyHistory) => {
     setSelectedHistory(history)
     setShowHistoryDetails(true)
+    setShowBountyDetails(false)
+    setSelectedBounty(null)
   }
 
   const handleBackToBounties = () => {
+    setShowHistoryDetails(false)
+    setSelectedHistory(null)
+    setShowBountyDetails(false)
+    setSelectedBounty(null)
+  }
+
+  const handleBountyClick = (bounty: Bounty) => {
+    setSelectedBounty(bounty)
+    setShowBountyDetails(true)
     setShowHistoryDetails(false)
     setSelectedHistory(null)
   }
@@ -219,7 +232,7 @@ export default function BountiesPage() {
         {/* Main Content */}
         <div className="flex-1 overflow-y-auto space-bg bounties-scroll-area">
           <div className="p-6 min-h-full">
-            {!showHistoryDetails ? (
+            {!showHistoryDetails && !showBountyDetails ? (
               <>
                 {/* Banner */}
                 <div className="gradient-orange rounded-lg p-6 mb-6 text-black">
@@ -285,414 +298,457 @@ export default function BountiesPage() {
 
                 {/* Two Column Bounties Layout */}
                 <div className="grid grid-cols-2 gap-6 pb-20 max-h-[600px] overflow-y-auto pr-2 hide-scrollbar">
-                  {/* Left Column */}
-                  <div className="space-y-4">
-                    {mockBounties
-                      .filter((_, index) => index % 2 === 0)
-                      .map((bounty) => (
-                        <Card key={bounty.id} className="space-card">
-                          <CardHeader className="pb-3">
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <Badge className={getDifficultyColor(bounty.difficulty)}>{bounty.difficulty}</Badge>
-                              </div>
-                              <div className="text-right">
-                                <div className="flex items-center gap-1 text-green-500 font-bold">
-                                  <DollarSign className="w-4 h-4" />
-                                  {bounty.reward} {bounty.currency}
-                                </div>
-                              </div>
-                            </div>
-                            <CardTitle className="text-lg text-white mb-2">{bounty.title}</CardTitle>
-                            <p className="text-gray-300 text-sm line-clamp-2">{bounty.description}</p>
-                          </CardHeader>
-                          <CardContent className="pt-0">
-                            <div className="flex gap-1 mb-3 flex-wrap">
-                              {bounty.tags.map((tag) => (
-                                <Badge key={tag} variant="secondary" className="bg-gray-800/50 text-gray-300 text-xs">
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-                            <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
-                              <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
-                                  {bounty.timeLeft}
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Users className="w-3 h-3" />
-                                  {bounty.participants}/{bounty.maxParticipants}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Avatar className="w-4 h-4">
-                                  <AvatarImage src={bounty.sponsorAvatar || "/placeholder.svg"} />
-                                  <AvatarFallback className="text-xs">{bounty.sponsor[0]}</AvatarFallback>
-                                </Avatar>
-                                <span>{bounty.sponsor}</span>
-                              </div>
-                            </div>
-                            <Button className="w-full gradient-orange text-black font-medium hover:glow-orange">
-                              Accept Challenge
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      ))}
-                  </div>
-
-                  {/* Right Column */}
-                  <div className="space-y-4">
-                    {mockBounties
-                      .filter((_, index) => index % 2 === 1)
-                      .map((bounty) => (
-                        <Card key={bounty.id} className="space-card">
-                          <CardHeader className="pb-3">
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <Badge className={getDifficultyColor(bounty.difficulty)}>{bounty.difficulty}</Badge>
-                              </div>
-                              <div className="text-right">
-                                <div className="flex items-center gap-1 text-green-500 font-bold">
-                                  <DollarSign className="w-4 h-4" />
-                                  {bounty.reward} {bounty.currency}
-                                </div>
-                              </div>
-                            </div>
-                            <CardTitle className="text-lg text-white mb-2">{bounty.title}</CardTitle>
-                            <p className="text-gray-300 text-sm line-clamp-2">{bounty.description}</p>
-                          </CardHeader>
-                          <CardContent className="pt-0">
-                            <div className="flex gap-1 mb-3 flex-wrap">
-                              {bounty.tags.map((tag) => (
-                                <Badge key={tag} variant="secondary" className="bg-gray-800/50 text-gray-300 text-xs">
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-                            <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
-                              <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
-                                  {bounty.timeLeft}
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Users className="w-3 h-3" />
-                                  {bounty.participants}/{bounty.maxParticipants}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Avatar className="w-4 h-4">
-                                  <AvatarImage src={bounty.sponsorAvatar || "/placeholder.svg"} />
-                                  <AvatarFallback className="text-xs">{bounty.sponsor[0]}</AvatarFallback>
-                                </Avatar>
-                                <span>{bounty.sponsor}</span>
-                              </div>
-                            </div>
-                            <Button className="w-full gradient-orange text-black font-medium hover:glow-orange">
-                              Accept Challenge
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      ))}
-                  </div>
-                </div>
-              </>
-            ) : (
-              /* History Details View */
-              selectedHistory && (
-                <div className="min-h-full">
-                  <div className="flex items-center gap-4 mb-6">
-                    <Button
-                      variant="ghost"
-                      onClick={handleBackToBounties}
-                      className="text-orange-500 hover:text-orange-400"
-                    >
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                      Back to Bounties
-                    </Button>
-                    <h1 className="text-3xl font-bold text-white">Challenge Details</h1>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Left Column - Main Details */}
-                    <div className="space-y-6">
-                      {/* Challenge Overview */}
-                      <Card className="space-card">
-                        <CardHeader>
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-4">
-                                <CardTitle className="text-2xl text-white">{selectedHistory.title}</CardTitle>
-                                <Badge className={getStatusColor(selectedHistory.status)} variant="secondary">
-                                  {selectedHistory.status}
-                                </Badge>
-                              </div>
-                              <p className="text-gray-300 mb-6 text-lg leading-relaxed">
-                                {selectedHistory.description}
-                              </p>
-                              <div className="flex gap-2 mb-6">
-                                {selectedHistory.tags.map((tag) => (
-                                  <Badge key={tag} variant="secondary" className="bg-gray-800/50 text-gray-300">
-                                    {tag}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="text-right ml-6">
-                              <div className="flex items-center gap-2 mb-2">
-                                <DollarSign className="w-6 h-6 text-green-500" />
-                                <span className="text-3xl font-bold text-green-500">${selectedHistory.reward}</span>
-                              </div>
-                              <p className="text-gray-400">Reward</p>
+                  {mockBounties.map((bounty) => (
+                    <Card key={bounty.id} className="space-card cursor-pointer" onClick={() => handleBountyClick(bounty)}>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <Badge className={getDifficultyColor(bounty.difficulty)}>{bounty.difficulty}</Badge>
+                          </div>
+                          <div className="text-right">
+                            <div className="flex items-center gap-1 text-green-500 font-bold">
+                              <DollarSign className="w-4 h-4" />
+                              {bounty.reward} {bounty.currency}
                             </div>
                           </div>
-                        </CardHeader>
-                      </Card>
+                        </div>
+                        <CardTitle className="text-lg text-white mb-2">{bounty.title}</CardTitle>
+                        <p className="text-gray-300 text-sm line-clamp-2">{bounty.description}</p>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="flex gap-1 mb-3 flex-wrap">
+                          {bounty.tags.map((tag) => (
+                            <Badge key={tag} variant="secondary" className="bg-gray-800/50 text-gray-300 text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {bounty.timeLeft}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Users className="w-3 h-3" />
+                              {bounty.participants}/{bounty.maxParticipants}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Avatar className="w-4 h-4">
+                              <AvatarImage src={bounty.sponsorAvatar || "/placeholder.svg"} />
+                              <AvatarFallback className="text-xs">{bounty.sponsor[0]}</AvatarFallback>
+                            </Avatar>
+                            <span>{bounty.sponsor}</span>
+                          </div>
+                        </div>
+                        <Button className="w-full gradient-orange text-black font-medium hover:glow-orange">
+                          Accept Challenge
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </>
+            ) : showHistoryDetails && selectedHistory ? (
+              /* History Details View */
+              <div className="min-h-full">
+                <div className="flex items-center gap-4 mb-6">
+                  <Button
+                    variant="ghost"
+                    onClick={handleBackToBounties}
+                    className="text-orange-500 hover:text-orange-400"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Bounties
+                  </Button>
+                  <h1 className="text-3xl font-bold text-white">Challenge Details</h1>
+                </div>
 
-                      {/* Progress Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Left Column - Main Details */}
+                  <div className="space-y-6">
+                    {/* Challenge Overview */}
+                    <Card className="space-card">
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-4">
+                              <CardTitle className="text-2xl text-white">{selectedHistory.title}</CardTitle>
+                              <Badge className={getStatusColor(selectedHistory.status)} variant="secondary">
+                                {selectedHistory.status}
+                              </Badge>
+                            </div>
+                            <p className="text-gray-300 mb-6 text-lg leading-relaxed">
+                              {selectedHistory.description}
+                            </p>
+                            <div className="flex gap-2 mb-6">
+                              {selectedHistory.tags.map((tag) => (
+                                <Badge key={tag} variant="secondary" className="bg-gray-800/50 text-gray-300">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="text-right ml-6">
+                            <div className="flex items-center gap-2 mb-2">
+                              <DollarSign className="w-6 h-6 text-green-500" />
+                              <span className="text-3xl font-bold text-green-500">${selectedHistory.reward}</span>
+                            </div>
+                            <p className="text-gray-400">Reward</p>
+                          </div>
+                        </div>
+                      </CardHeader>
+                    </Card>
+
+                    {/* Progress Section */}
+                    <Card className="space-card">
+                      <CardHeader>
+                        <CardTitle className="text-orange-500 flex items-center gap-2">
+                          <Target className="w-5 h-5" />
+                          Progress & Milestones
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div>
+                          <div className="flex justify-between text-sm mb-2">
+                            <span className="text-gray-400">Overall Completion</span>
+                            <span className="text-white font-medium">{selectedHistory.progress}%</span>
+                          </div>
+                          <Progress value={selectedHistory.progress} className="h-3" />
+                        </div>
+
+                        {/* Milestone breakdown */}
+                        <div className="space-y-3 mt-6">
+                          <h4 className="text-white font-medium">Milestones</h4>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                                  <span className="text-xs text-white">✓</span>
+                                </div>
+                                <span className="text-gray-300">Project Setup & Structure</span>
+                              </div>
+                              <span className="text-green-500 text-sm">Completed</span>
+                            </div>
+                            <div className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                                  <span className="text-xs text-white">✓</span>
+                                </div>
+                                <span className="text-gray-300">Core Functionality</span>
+                              </div>
+                              <span className="text-green-500 text-sm">Completed</span>
+                            </div>
+                            <div className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                                  <span className="text-xs text-white">✓</span>
+                                </div>
+                                <span className="text-gray-300">Testing & Documentation</span>
+                              </div>
+                              <span className="text-green-500 text-sm">Completed</span>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Skills Gained */}
+                    <Card className="space-card">
+                      <CardHeader>
+                        <CardTitle className="text-orange-500 flex items-center gap-2">
+                          <Zap className="w-5 h-5" />
+                          Skills Gained
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <div className="flex justify-between">
+                              <span className="text-gray-300">React Hooks</span>
+                              <span className="text-orange-500">+25 XP</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-300">State Management</span>
+                              <span className="text-orange-500">+20 XP</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-300">Component Design</span>
+                              <span className="text-orange-500">+15 XP</span>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex justify-between">
+                              <span className="text-gray-300">CSS Styling</span>
+                              <span className="text-orange-500">+10 XP</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-300">Git Workflow</span>
+                              <span className="text-orange-500">+15 XP</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-300">Testing</span>
+                              <span className="text-orange-500">+20 XP</span>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Right Column - Additional Info */}
+                  <div className="space-y-6">
+                    {/* Submission Details */}
+                    {selectedHistory.submissionUrl && (
                       <Card className="space-card">
                         <CardHeader>
                           <CardTitle className="text-orange-500 flex items-center gap-2">
-                            <Target className="w-5 h-5" />
-                            Progress & Milestones
+                            <Upload className="w-5 h-5" />
+                            Submission
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                          <div>
-                            <div className="flex justify-between text-sm mb-2">
-                              <span className="text-gray-400">Overall Completion</span>
-                              <span className="text-white font-medium">{selectedHistory.progress}%</span>
-                            </div>
-                            <Progress value={selectedHistory.progress} className="h-3" />
+                          <div className="bg-gray-800/30 rounded-lg p-4">
+                            <h4 className="text-white font-medium mb-2">Repository</h4>
+                            <p className="text-gray-400 text-sm mb-3">GitHub repository with complete source code</p>
+                            <Button
+                              variant="outline"
+                              className="bg-orange-500/20 border-orange-500 text-orange-500"
+                              asChild
+                            >
+                              <a href={selectedHistory.submissionUrl} target="_blank" rel="noopener noreferrer">
+                                View Submission
+                              </a>
+                            </Button>
                           </div>
 
-                          {/* Milestone breakdown */}
-                          <div className="space-y-3 mt-6">
-                            <h4 className="text-white font-medium">Milestones</h4>
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                                    <span className="text-xs text-white">✓</span>
-                                  </div>
-                                  <span className="text-gray-300">Project Setup & Structure</span>
-                                </div>
-                                <span className="text-green-500 text-sm">Completed</span>
-                              </div>
-                              <div className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                                    <span className="text-xs text-white">✓</span>
-                                  </div>
-                                  <span className="text-gray-300">Core Functionality</span>
-                                </div>
-                                <span className="text-green-500 text-sm">Completed</span>
-                              </div>
-                              <div className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                                    <span className="text-xs text-white">✓</span>
-                                  </div>
-                                  <span className="text-gray-300">Testing & Documentation</span>
-                                </div>
-                                <span className="text-green-500 text-sm">Completed</span>
-                              </div>
-                            </div>
+                          <div className="bg-gray-800/30 rounded-lg p-4">
+                            <h4 className="text-white font-medium mb-2">Live Demo</h4>
+                            <p className="text-gray-400 text-sm mb-3">Working application deployed on Vercel</p>
+                            <Button variant="outline" className="bg-blue-500/20 border-blue-500 text-blue-500">
+                              View Live Demo
+                            </Button>
                           </div>
                         </CardContent>
                       </Card>
+                    )}
 
-                      {/* Skills Gained */}
+                    {/* Feedback Section */}
+                    {selectedHistory.feedback && (
                       <Card className="space-card">
                         <CardHeader>
                           <CardTitle className="text-orange-500 flex items-center gap-2">
-                            <Zap className="w-5 h-5" />
-                            Skills Gained
+                            <MessageCircle className="w-5 h-5" />
+                            Reviewer Feedback
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <div className="flex justify-between">
-                                <span className="text-gray-300">React Hooks</span>
-                                <span className="text-orange-500">+25 XP</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-300">State Management</span>
-                                <span className="text-orange-500">+20 XP</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-300">Component Design</span>
-                                <span className="text-orange-500">+15 XP</span>
+                          <div className="bg-gray-800/30 rounded-lg p-4">
+                            <div className="flex items-center gap-3 mb-3">
+                              <Avatar className="w-8 h-8">
+                                <AvatarImage src="/placeholder.svg?height=32&width=32" />
+                                <AvatarFallback>RV</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <span className="text-white font-medium">Code Reviewer</span>
+                                <p className="text-xs text-gray-400">Senior Developer</p>
                               </div>
                             </div>
-                            <div className="space-y-2">
-                              <div className="flex justify-between">
-                                <span className="text-gray-300">CSS Styling</span>
-                                <span className="text-orange-500">+10 XP</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-300">Git Workflow</span>
-                                <span className="text-orange-500">+15 XP</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-300">Testing</span>
-                                <span className="text-orange-500">+20 XP</span>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
+                            <p className="text-gray-300 leading-relaxed">{selectedHistory.feedback}</p>
 
-                    {/* Right Column - Additional Info */}
-                    <div className="space-y-6">
-                      {/* Submission Details */}
-                      {selectedHistory.submissionUrl && (
-                        <Card className="space-card">
-                          <CardHeader>
-                            <CardTitle className="text-orange-500 flex items-center gap-2">
-                              <Upload className="w-5 h-5" />
-                              Submission
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            <div className="bg-gray-800/30 rounded-lg p-4">
-                              <h4 className="text-white font-medium mb-2">Repository</h4>
-                              <p className="text-gray-400 text-sm mb-3">GitHub repository with complete source code</p>
-                              <Button
-                                variant="outline"
-                                className="bg-orange-500/20 border-orange-500 text-orange-500"
-                                asChild
-                              >
-                                <a href={selectedHistory.submissionUrl} target="_blank" rel="noopener noreferrer">
-                                  View Submission
-                                </a>
-                              </Button>
-                            </div>
-
-                            <div className="bg-gray-800/30 rounded-lg p-4">
-                              <h4 className="text-white font-medium mb-2">Live Demo</h4>
-                              <p className="text-gray-400 text-sm mb-3">Working application deployed on Vercel</p>
-                              <Button variant="outline" className="bg-blue-500/20 border-blue-500 text-blue-500">
-                                View Live Demo
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )}
-
-                      {/* Feedback Section */}
-                      {selectedHistory.feedback && (
-                        <Card className="space-card">
-                          <CardHeader>
-                            <CardTitle className="text-orange-500 flex items-center gap-2">
-                              <MessageCircle className="w-5 h-5" />
-                              Reviewer Feedback
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="bg-gray-800/30 rounded-lg p-4">
-                              <div className="flex items-center gap-3 mb-3">
-                                <Avatar className="w-8 h-8">
-                                  <AvatarImage src="/placeholder.svg?height=32&width=32" />
-                                  <AvatarFallback>RV</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <span className="text-white font-medium">Code Reviewer</span>
-                                  <p className="text-xs text-gray-400">Senior Developer</p>
+                            <div className="mt-4 pt-4 border-t border-gray-700">
+                              <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-green-500">✓</span>
+                                  <span className="text-sm text-gray-400">Code Quality</span>
                                 </div>
-                              </div>
-                              <p className="text-gray-300 leading-relaxed">{selectedHistory.feedback}</p>
-
-                              <div className="mt-4 pt-4 border-t border-gray-700">
-                                <div className="flex items-center gap-4">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-green-500">✓</span>
-                                    <span className="text-sm text-gray-400">Code Quality</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-green-500">✓</span>
-                                    <span className="text-sm text-gray-400">Functionality</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-green-500">✓</span>
-                                    <span className="text-sm text-gray-400">Documentation</span>
-                                  </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-green-500">✓</span>
+                                  <span className="text-sm text-gray-400">Functionality</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-green-500">✓</span>
+                                  <span className="text-sm text-gray-400">Documentation</span>
                                 </div>
                               </div>
                             </div>
-                          </CardContent>
-                        </Card>
-                      )}
-
-                      {/* Related Challenges */}
-                      <Card className="space-card">
-                        <CardHeader>
-                          <CardTitle className="text-orange-500 flex items-center gap-2">
-                            <Target className="w-5 h-5" />
-                            Related Challenges
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-3">
-                            <div className="p-3 bg-gray-800/30 rounded-lg cursor-pointer hover:bg-gray-800/50 transition-colors">
-                              <h4 className="text-white font-medium text-sm">Advanced React Patterns</h4>
-                              <p className="text-gray-400 text-xs">Build complex components with render props</p>
-                              <div className="flex items-center justify-between mt-2">
-                                <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500">Medium</Badge>
-                                <span className="text-green-500 text-sm">$250</span>
-                              </div>
-                            </div>
-
-                            <div className="p-3 bg-gray-800/30 rounded-lg cursor-pointer hover:bg-gray-800/50 transition-colors">
-                              <h4 className="text-white font-medium text-sm">React Testing Library</h4>
-                              <p className="text-gray-400 text-xs">Write comprehensive tests for React apps</p>
-                              <div className="flex items-center justify-between mt-2">
-                                <Badge className="bg-green-500/20 text-green-400 border-green-500">Easy</Badge>
-                                <span className="text-green-500 text-sm">$150</span>
-                              </div>
-                            </div>
-
-                            <div className="p-3 bg-gray-800/30 rounded-lg cursor-pointer hover:bg-gray-800/50 transition-colors">
-                              <h4 className="text-white font-medium text-sm">Full-Stack Todo App</h4>
-                              <p className="text-gray-400 text-xs">Add backend API and database</p>
-                              <div className="flex items-center justify-between mt-2">
-                                <Badge className="bg-orange-500/20 text-orange-400 border-orange-500">Hard</Badge>
-                                <span className="text-green-500 text-sm">$400</span>
-                              </div>
-                            </div>
                           </div>
                         </CardContent>
                       </Card>
+                    )}
 
-                      {/* Achievement Earned */}
-                      <Card className="space-card">
-                        <CardHeader>
-                          <CardTitle className="text-orange-500 flex items-center gap-2">
-                            <Award className="w-5 h-5" />
-                            Achievement Unlocked
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="text-center p-4">
-                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center mx-auto mb-3">
-                              <Trophy className="w-8 h-8 text-black" />
+                    {/* Related Challenges */}
+                    <Card className="space-card">
+                      <CardHeader>
+                        <CardTitle className="text-orange-500 flex items-center gap-2">
+                          <Target className="w-5 h-5" />
+                          Related Challenges
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="p-3 bg-gray-800/30 rounded-lg cursor-pointer hover:bg-gray-800/50 transition-colors">
+                            <h4 className="text-white font-medium text-sm">Advanced React Patterns</h4>
+                            <p className="text-gray-400 text-xs">Build complex components with render props</p>
+                            <div className="flex items-center justify-between mt-2">
+                              <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500">Medium</Badge>
+                              <span className="text-green-500 text-sm">$250</span>
                             </div>
-                            <h4 className="text-white font-bold mb-1">React Rookie</h4>
-                            <p className="text-gray-400 text-sm mb-3">Completed your first React challenge</p>
-                            <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500">
-                              Rare Achievement
-                            </Badge>
                           </div>
-                        </CardContent>
-                      </Card>
-                    </div>
+
+                          <div className="p-3 bg-gray-800/30 rounded-lg cursor-pointer hover:bg-gray-800/50 transition-colors">
+                            <h4 className="text-white font-medium text-sm">React Testing Library</h4>
+                            <p className="text-gray-400 text-xs">Write comprehensive tests for React apps</p>
+                            <div className="flex items-center justify-between mt-2">
+                              <Badge className="bg-green-500/20 text-green-400 border-green-500">Easy</Badge>
+                              <span className="text-green-500 text-sm">$150</span>
+                            </div>
+                          </div>
+
+                          <div className="p-3 bg-gray-800/30 rounded-lg cursor-pointer hover:bg-gray-800/50 transition-colors">
+                            <h4 className="text-white font-medium text-sm">Full-Stack Todo App</h4>
+                            <p className="text-gray-400 text-xs">Add backend API and database</p>
+                            <div className="flex items-center justify-between mt-2">
+                              <Badge className="bg-orange-500/20 text-orange-400 border-orange-500">Hard</Badge>
+                              <span className="text-green-500 text-sm">$400</span>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Achievement Earned */}
+                    <Card className="space-card">
+                      <CardHeader>
+                        <CardTitle className="text-orange-500 flex items-center gap-2">
+                          <Award className="w-5 h-5" />
+                          Achievement Unlocked
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-center p-4">
+                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center mx-auto mb-3">
+                            <Trophy className="w-8 h-8 text-black" />
+                          </div>
+                          <h4 className="text-white font-bold mb-1">React Rookie</h4>
+                          <p className="text-gray-400 text-sm mb-3">Completed your first React challenge</p>
+                          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500">
+                            Rare Achievement
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
-              )
-            )}
+              </div>
+            ) : showBountyDetails && selectedBounty ? (
+              /* Bounty Details View */
+              <div className="min-h-full">
+                <div className="flex items-center gap-4 mb-6">
+                  <Button
+                    variant="ghost"
+                    onClick={handleBackToBounties}
+                    className="text-orange-500 hover:text-orange-400"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Bounties
+                  </Button>
+                  <h1 className="text-3xl font-bold text-white">Bounty Details</h1>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Left Column - Main Details */}
+                  <div className="space-y-6">
+                    {/* Challenge Overview */}
+                    <Card className="space-card">
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-4">
+                              <CardTitle className="text-2xl text-white">{selectedBounty.title}</CardTitle>
+                              <Badge className={getDifficultyColor(selectedBounty.difficulty)}>
+                                {selectedBounty.difficulty}
+                              </Badge>
+                            </div>
+                            <p className="text-gray-300 mb-6 text-lg leading-relaxed">
+                              {selectedBounty.description}
+                            </p>
+                            <div className="flex gap-2 mb-6">
+                              {selectedBounty.tags.map((tag) => (
+                                <Badge key={tag} variant="secondary" className="bg-gray-800/50 text-gray-300">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="text-right ml-6">
+                            <div className="flex items-center gap-2 mb-2">
+                              <DollarSign className="w-6 h-6 text-green-500" />
+                              <span className="text-3xl font-bold text-green-500">{selectedBounty.reward} {selectedBounty.currency}</span>
+                            </div>
+                            <p className="text-gray-400">Reward</p>
+                          </div>
+                        </div>
+                      </CardHeader>
+                    </Card>
+
+                    {/* Participants & Sponsor */}
+                    <Card className="space-card">
+                      <CardHeader>
+                        <CardTitle className="text-orange-500 flex items-center gap-2">
+                          <Users className="w-5 h-5" />
+                          Participants
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center gap-4 mb-2">
+                          <span className="text-white font-medium">{selectedBounty.participants}</span>
+                          <span className="text-gray-400">/ {selectedBounty.maxParticipants} joined</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage src={selectedBounty.sponsorAvatar || "/placeholder.svg"} />
+                            <AvatarFallback className="text-xs">{selectedBounty.sponsor[0]}</AvatarFallback>
+                          </Avatar>
+                          <span className="text-white font-medium">{selectedBounty.sponsor}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Time Left */}
+                    <Card className="space-card">
+                      <CardHeader>
+                        <CardTitle className="text-orange-500 flex items-center gap-2">
+                          <Clock className="w-5 h-5" />
+                          Time Left
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <span className="text-white font-medium text-lg">{selectedBounty.timeLeft}</span>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Right Column - Action */}
+                  <div className="space-y-6">
+                    <Card className="space-card">
+                      <CardHeader>
+                        <CardTitle className="text-orange-500 flex items-center gap-2">
+                          <Trophy className="w-5 h-5" />
+                          Accept Challenge
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Button className="w-full gradient-orange text-black font-medium hover:glow-orange">
+                          Accept Challenge
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
 
