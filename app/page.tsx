@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -108,6 +108,8 @@ export default function BlogsPage() {
   const [showCreatePost, setShowCreatePost] = useState(false)
   const [newComment, setNewComment] = useState("")
   const [comments, setComments] = useState<Comment[]>(mockComments)
+  const [sidebarWidth, setSidebarWidth] = useState(400) // Default width in pixels
+  const [isResizing, setIsResizing] = useState(false)
 
   const handlePostClick = (post: BlogPost) => {
     setSelectedPost(post)
@@ -141,11 +143,54 @@ export default function BlogsPage() {
     )
   }
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsResizing(true)
+    e.preventDefault()
+  }
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isResizing) return
+    
+    const containerWidth = window.innerWidth
+    const newWidth = containerWidth - e.clientX
+    
+    // Set min and max constraints
+    const minWidth = 300
+    const maxWidth = containerWidth * 0.8
+    
+    if (newWidth >= minWidth && newWidth <= maxWidth) {
+      setSidebarWidth(newWidth)
+    }
+  }
+
+  const handleMouseUp = () => {
+    setIsResizing(false)
+  }
+
+  // Add event listeners for mouse move and up
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+      }
+    }
+  }, [isResizing])
+
   return (
     <div className="min-h-screen space-bg">
       <div className="flex h-screen">
         {/* Main Content - Posts List */}
-        <div className={`transition-all duration-300 ${selectedPost ? "w-2/3" : "w-full"} overflow-y-auto space-bg`}>
+        <div 
+          className="overflow-y-auto space-bg hide-scrollbar"
+          style={{ 
+            width: selectedPost ? `calc(100% - ${sidebarWidth}px)` : '100%',
+            transition: isResizing ? 'none' : 'width 0.3s ease'
+          }}
+        >
           <div className="p-6">
             {/* Header */}
             <div className="mb-6">
@@ -261,9 +306,25 @@ export default function BlogsPage() {
           </div>
         </div>
 
+        {/* Resizable Divider */}
+        {selectedPost && (
+          <div
+            className="w-1 bg-orange-500/20 cursor-col-resize hover:bg-orange-500/40 transition-colors relative"
+            onMouseDown={handleMouseDown}
+          >
+            <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 w-2 bg-orange-500/0 hover:bg-orange-500/20 transition-colors" />
+          </div>
+        )}
+
         {/* Right Panel - Post Details + Comments Section */}
         {selectedPost && (
-          <div className="w-1/3 h-full space-bg border-l border-orange-500/20 overflow-y-auto">
+          <div 
+            className="h-full space-bg border-l border-orange-500/20 overflow-y-auto hide-scrollbar"
+            style={{ 
+              width: `${sidebarWidth}px`,
+              transition: isResizing ? 'none' : 'width 0.3s ease'
+            }}
+          >
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-semibold text-orange-500">📖 Post Details</h3>
