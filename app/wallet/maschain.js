@@ -49,3 +49,22 @@ export async function checkBalance(walletAddress, contractAddress) {
   });
   return data.result;  // string balance
 }
+
+export async function fetchTxHistory(addr, contract, filter = 'to|from', status = '') {
+  const { data } = await client.get('/token/get-token-transaction', {
+      params: {
+          wallet_address: addr,
+          contract_address: contract,
+          filter,
+          status
+      }
+  });
+
+  if (data.status !== 200 || !Array.isArray(data.result)) {
+      console.error("Invalid API response:", data);
+      return [];
+  }
+  return data.result; // return array directly
+}
+
+
