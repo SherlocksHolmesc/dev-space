@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Home, Trophy, Shield, User, Zap, Star, Award, Wallet } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { Home, Trophy, Shield, User, Zap, Star, Award, Wallet, LogOut, UserCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const menuItems = [
@@ -41,7 +41,47 @@ const menuItems = [
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const [isHovered, setIsHovered] = useState(false)
+  const [user, setUser] = useState<any>(null)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  // Check authentication status on component mount
+  useEffect(() => {
+    const checkAuth = () => {
+      try {
+        const isLoggedInStatus = localStorage.getItem('is_logged_in')
+        const userData = localStorage.getItem('devspace_user')
+        
+        if (isLoggedInStatus === 'true' && userData) {
+          const userInfo = JSON.parse(userData)
+          setUser(userInfo)
+          setIsLoggedIn(true)
+        } else {
+          setUser(null)
+          setIsLoggedIn(false)
+        }
+      } catch (error) {
+        console.error('Error checking authentication:', error)
+        setUser(null)
+        setIsLoggedIn(false)
+      }
+    }
+
+    checkAuth()
+  }, [])
+
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem('is_logged_in')
+      // Keep user data for re-login, but remove login status
+      setUser(null)
+      setIsLoggedIn(false)
+      router.push('/login')
+    } catch (error) {
+      console.error('Error during logout:', error)
+    }
+  }
 
   return (
     <div
@@ -106,9 +146,10 @@ export function AppSidebar() {
         ))}
       </div>
 
-      <div className="absolute bottom-4 left-2 right-2">
+      <div className="absolute bottom-4 left-2 right-2 space-y-2">
+        {/* Level Progress */}
         <div className={cn("transition-all duration-300", isHovered ? "opacity-100" : "opacity-0")}>
-          <div className="space-card p-3 rounded-lg">
+          <div className="space-card p-3 rounded-lg mb-2">
             <div className="flex items-center gap-2 mb-2">
               <Award className="w-4 h-4 text-orange-500" />
               <span className="text-sm font-medium text-orange-500">Level 5</span>
@@ -119,6 +160,27 @@ export function AppSidebar() {
             <p className="text-xs text-gray-400 mt-1">750/1000 XP</p>
           </div>
         </div>
+
+        {/* Logout Button */}
+        {isLoggedIn && (
+          <button
+            onClick={handleLogout}
+            className={cn(
+              "w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-300 group space-card border border-red-500/20",
+              isHovered ? "hover:bg-red-600/10" : "hover:bg-red-600/5"
+            )}
+          >
+            <LogOut className="w-5 h-5 text-red-400 group-hover:text-red-300 transition-colors flex-shrink-0" />
+            <div
+              className={cn(
+                "transition-all duration-300 overflow-hidden whitespace-nowrap",
+                isHovered ? "w-auto opacity-100" : "w-0 opacity-0",
+              )}
+            >
+              <span className="text-sm font-medium text-red-400 group-hover:text-red-300">Logout</span>
+            </div>
+          </button>
+        )}
       </div>
     </div>
   )

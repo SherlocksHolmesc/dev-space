@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Wallet } from 'lucide-react';
+import { Wallet, User, AlertCircle } from 'lucide-react';
 
 export default function WalletPage() {
   const [balance, setBalance] = useState<string | null>(null);
@@ -12,14 +12,49 @@ export default function WalletPage() {
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [showAll, setShowAll] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [isUserWallet, setIsUserWallet] = useState(false);
+  const [userInfo, setUserInfo] = useState<any>(null);
 
   useEffect(() => {
+    // Get user info from localStorage
+    const getUserInfo = () => {
+      try {
+        const isLoggedIn = localStorage.getItem('is_logged_in');
+        if (isLoggedIn === 'true') {
+          const userData = localStorage.getItem('devspace_user');
+          if (userData) {
+            const user = JSON.parse(userData);
+            setUserInfo(user);
+            return user.wallet;
+          }
+        }
+        return null;
+      } catch (error) {
+        console.error('Error getting user info:', error);
+        return null;
+      }
+    };
+
+    const userWallet = getUserInfo();
+    console.log('User wallet from localStorage:', userWallet);
+
     async function getBalance() {
       try {
-        const res = await fetch('/api/balance', { method: 'GET' });
+        // Pass the wallet address as a query parameter
+        const url = userWallet 
+          ? `/api/balance?wallet=${encodeURIComponent(userWallet)}`
+          : '/api/balance';
+        
+        console.log('Fetching balance from:', url);
+        const res = await fetch(url, { method: 'GET' });
         if (!res.ok) throw new Error(`Error ${res.status}`);
         const json = await res.json();
+        console.log('Balance response:', json);
+        
         setBalance(json.balance);
+        setWalletAddress(json.walletAddress);
+        setIsUserWallet(json.isUserWallet);
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -30,10 +65,17 @@ export default function WalletPage() {
 
     async function getHistory() {
       try {
-        const res = await fetch('/api/history');
+        // Pass the wallet address as a query parameter
+        const url = userWallet 
+          ? `/api/history?wallet=${encodeURIComponent(userWallet)}`
+          : '/api/history';
+        
+        console.log('Fetching history from:', url);
+        const res = await fetch(url);
         if (!res.ok) throw new Error(`Error ${res.status}`);
         const json = await res.json();
-        console.log('Fetched history:', json);
+        console.log('History response:', json);
+        
         if (!json.history || !Array.isArray(json.history)) {
           console.error("Invalid history data structure:", json);
           setHistory([]); // fallback gracefully
@@ -75,6 +117,18 @@ export default function WalletPage() {
                   <span className="text-gray-400">Status</span>
                   <span className="text-green-400 font-medium">Active</span>
                 </div>
+                {userInfo && (
+                  <div className="pt-2 border-t border-gray-700">
+                    <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
+                      <User className="w-4 h-4" />
+                      <span>User Info</span>
+                    </div>
+                    <div className="text-xs text-gray-300">
+                      <div>Name: {userInfo.name}</div>
+                      <div>Email: {userInfo.email}</div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -85,7 +139,25 @@ export default function WalletPage() {
                 <div className="w-10 h-10 rounded-lg gradient-orange flex items-center justify-center">
                   <Wallet className="w-6 h-6 text-black" />
                 </div>
-                <CardTitle className="text-white text-2xl font-bold flex-1">Wallet Balance</CardTitle>
+                <div className="flex-1">
+                  <CardTitle className="text-white text-2xl font-bold">Wallet Balance</CardTitle>
+                  {walletAddress && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-sm text-gray-400">Address:</span>
+                      <span className="text-sm text-orange-400 font-mono">
+                        {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                      </span>
+                      {isUserWallet ? (
+                        <Badge className="bg-green-600/20 text-green-400 text-xs">Your Wallet</Badge>
+                      ) : (
+                        <Badge className="bg-yellow-600/20 text-yellow-400 text-xs flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          Demo Wallet
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="flex flex-col items-center gap-4 pt-0 pb-6">
                 <Avatar className="w-16 h-16 border-2 border-orange-500 shadow-orange-500/20 shadow-lg">
@@ -98,10 +170,11 @@ export default function WalletPage() {
                   </span>
                   <Badge className="bg-gray-800/50 text-gray-300 text-lg px-3 py-1" variant="secondary">MAS</Badge>
                 </div>
-                <div className="text-gray-400 text-sm mt-2">
+                <div className="text-gray-400 text-sm mt-2 text-center">
                   {loading && 'Loading your MasChain token balance...'}
                   {error && `Error: ${error}`}
-                  {!loading && !error && 'This is your current MasChain token balance.'}
+                  {!loading && !error && isUserWallet && 'This is your current MasChain token balance.'}
+                  {!loading && !error && !isUserWallet && 'This is the demo wallet balance. Log in to see your personal wallet.'}
                 </div>
               </CardContent>
             </Card>
@@ -109,6 +182,11 @@ export default function WalletPage() {
             <Card className="space-card">
               <CardHeader>
                 <CardTitle className="text-orange-500 text-lg">Wallet Activity Table</CardTitle>
+                {walletAddress && (
+                  <div className="text-sm text-gray-400">
+                    Showing transactions for: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -126,7 +204,7 @@ export default function WalletPage() {
                     <tbody className="divide-y divide-gray-800">
                       {!history || history.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="text-center text-gray-400 py-4">No transactions found.</td>
+                          <td colSpan={6} className="text-center text-gray-400 py-4">No transactions found.</td>
                         </tr>
                       ) : (
                         (showAll ? history : history.slice(0, 5)).map((tx, index) => (

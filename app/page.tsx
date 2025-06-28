@@ -1,529 +1,216 @@
+// REGISTER PAGE
 "use client"
 
-import React, { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
-import { Plus, MessageCircle, ThumbsUp, Eye, HelpCircle, Code, X, Send, ChevronUp, ChevronDown } from "lucide-react"
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-interface BlogPost {
-  id: number
-  title: string
-  content: string
-  author: string
-  avatar: string
-  type: "blog" | "help"
-  tags: string[]
-  likes: number
-  comments: number
-  views: number
-  timeAgo: string
-  level: number
-  isLiked: boolean
-}
+const API_URL = 'https://service-testnet.maschain.com';
+const CLIENT_ID = 'ed52d2c279e03d238660490f9d90125df150cecd632c246d15800d5e6f9898e1';
+const CLIENT_SECRET = 'sk_add3fbb2b5b89d5cfc6a03f112a494d31481685a1c5a7b81201de2b8196ddc7e';
 
-interface Comment {
-  id: number
-  author: string
-  avatar: string
-  content: string
-  timeAgo: string
-  votes: number
-  userVote: "up" | "down" | null
-  level: number
-}
+const Register = () => {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [ic, setIc] = useState('');
+  const [phone, setPhone] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-const mockPosts: BlogPost[] = [
-  {
-    id: 1,
-    title: "Building Scalable React Applications with TypeScript",
-    content:
-      "In this comprehensive guide, I'll walk you through the best practices for building scalable React applications using TypeScript. We'll cover component architecture, state management patterns, and performance optimization techniques that will help you build maintainable applications. First, let's start with setting up a proper project structure. When building large-scale applications, organization is key. I recommend using a feature-based folder structure where each feature has its own components, hooks, and utilities. This approach makes it easier to maintain and scale your application as it grows. Next, we'll dive into TypeScript integration. TypeScript provides excellent developer experience with IntelliSense, compile-time error checking, and better refactoring capabilities. Make sure to define proper interfaces for your props and state to get the most out of TypeScript's type system.",
-    author: "Alex Chen",
-    avatar: "/placeholder.svg?height=40&width=40",
-    type: "blog",
-    tags: ["React", "TypeScript", "Architecture"],
-    likes: 42,
-    comments: 8,
-    views: 156,
-    timeAgo: "2 hours ago",
-    level: 7,
-    isLiked: false,
-  },
-  {
-    id: 2,
-    title: "Need help with Next.js API routes authentication",
-    content:
-      "I'm struggling with implementing JWT authentication in Next.js API routes. Can someone help me understand the best approach? I've tried several methods but keep running into CORS issues and token validation problems. Here's what I've tried so far: 1. Using middleware to validate tokens, 2. Implementing custom authentication hooks, 3. Setting up proper CORS headers. The main issue I'm facing is that the token validation seems to work in development but fails in production. I'm using jsonwebtoken library for token generation and verification. Any insights would be greatly appreciated!",
-    author: "Sarah Kim",
-    avatar: "/placeholder.svg?height=40&width=40",
-    type: "help",
-    tags: ["Next.js", "Authentication", "JWT"],
-    likes: 15,
-    comments: 12,
-    views: 89,
-    timeAgo: "4 hours ago",
-    level: 3,
-    isLiked: false,
-  },
-]
-
-const mockComments: Comment[] = [
-  {
-    id: 1,
-    author: "Mike Johnson",
-    avatar: "/placeholder.svg?height=32&width=32",
-    content:
-      "Great explanation! This really helped me understand the component composition pattern. The examples are clear and well-structured.",
-    timeAgo: "1 hour ago",
-    votes: 12,
-    userVote: null,
-    level: 5,
-  },
-  {
-    id: 2,
-    author: "Emma Davis",
-    avatar: "/placeholder.svg?height=32&width=32",
-    content:
-      "I've been using this approach in production for 6 months now. One thing to add is that you should also consider memoization for performance optimization.",
-    timeAgo: "2 hours ago",
-    votes: 8,
-    userVote: null,
-    level: 9,
-  },
-  {
-    id: 3,
-    author: "David Wilson",
-    avatar: "/placeholder.svg?height=32&width=32",
-    content: "Thanks for sharing! Could you provide more details about the error handling patterns you mentioned?",
-    timeAgo: "3 hours ago",
-    votes: 3,
-    userVote: null,
-    level: 4,
-  },
-]
-
-export default function BlogsPage() {
-  const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null)
-  const [showCreatePost, setShowCreatePost] = useState(false)
-  const [newComment, setNewComment] = useState("")
-  const [comments, setComments] = useState<Comment[]>(mockComments)
-  const [posts, setPosts] = useState<BlogPost[]>(mockPosts)
-  const [sidebarWidth, setSidebarWidth] = useState(400) // Default width in pixels
-  const [isResizing, setIsResizing] = useState(false)
-
-  const handlePostClick = (post: BlogPost) => {
-    setSelectedPost(post)
-  }
-
-  const handleCloseDetails = () => {
-    setSelectedPost(null)
-  }
-
-  const handleLike = (postId: number) => {
-    setPosts(posts.map(post => {
-      if (post.id === postId) {
-        const newLikes = post.isLiked ? post.likes - 1 : post.likes + 1
-        const updatedPost = { ...post, likes: newLikes, isLiked: !post.isLiked }
-        
-        // Also update selectedPost if it's the same post
-        if (selectedPost && selectedPost.id === postId) {
-          setSelectedPost(updatedPost)
-        }
-        
-        return updatedPost
-      }
-      return post
-    }))
-  }
-
-  const handleAddComment = () => {
-    if (newComment.trim() === '') return
-
-    const newCommentObj: Comment = {
-      id: comments.length + 1,
-      author: "You",
-      avatar: "/placeholder-user.jpg",
-      content: newComment.trim(),
-      timeAgo: "Just now",
-      votes: 0,
-      userVote: null,
-      level: 5,
-    }
-
-    setComments([newCommentObj, ...comments])
-    setNewComment("")
-  }
-
-  const handleVote = (commentId: number, voteType: "up" | "down") => {
-    setComments(
-      comments.map((comment) => {
-        if (comment.id === commentId) {
-          const currentVote = comment.userVote
-          let newVotes = comment.votes
-          let newUserVote: "up" | "down" | null = voteType
-
-          if (currentVote === voteType) {
-            newUserVote = null
-            newVotes += voteType === "up" ? -1 : 1
-          } else if (currentVote === null) {
-            newVotes += voteType === "up" ? 1 : -1
-          } else {
-            newVotes += voteType === "up" ? 2 : -2
-          }
-
-          return { ...comment, votes: newVotes, userVote: newUserVote }
-        }
-        return comment
-      }),
-    )
-  }
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsResizing(true)
-    e.preventDefault()
-  }
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isResizing) return
-    
-    const containerWidth = window.innerWidth
-    const newWidth = containerWidth - e.clientX
-    
-    // Set min and max constraints
-    const minWidth = 300
-    const maxWidth = containerWidth * 0.8
-    
-    if (newWidth >= minWidth && newWidth <= maxWidth) {
-      setSidebarWidth(newWidth)
-    }
-  }
-
-  const handleMouseUp = () => {
-    setIsResizing(false)
-  }
-
-  // Add event listeners for mouse move and up
+  // Check if user is already logged in on page load
   useEffect(() => {
-    if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove)
-      document.addEventListener('mouseup', handleMouseUp)
-      
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove)
-        document.removeEventListener('mouseup', handleMouseUp)
+    const checkExistingAuth = () => {
+      try {
+        const isLoggedIn = localStorage.getItem('is_logged_in');
+        const userData = localStorage.getItem('devspace_user');
+        
+        if (isLoggedIn === 'true' && userData) {
+          const user = JSON.parse(userData);
+          if (user.email && user.wallet) {
+            console.log('✅ User already logged in, redirecting to main app...');
+            router.push('/blog');
+            return;
+          }
+        }
+        
+        // If not logged in, stop loading and show register form
+        setIsCheckingAuth(false);
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+        setIsCheckingAuth(false);
       }
+    };
+
+    checkExistingAuth();
+  }, [router]);
+
+  const handleSubmit = async (e: { preventDefault: () => void; }) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const requestBody = {
+      name,
+      email,
+      ic,
+      phone,
+      wallet_name: `${name}'s wallet`
+    };
+
+    try {
+      if (password !== confirmPassword) {
+        setError('Passwords do not match');
+        setLoading(false);
+        return;
+      }
+      const res = await fetch(`${API_URL}/api/wallet/create-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'client_id': CLIENT_ID,
+          'client_secret': CLIENT_SECRET
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.result?.wallet?.wallet_address) {
+        // Save user data
+        const userData = {
+          name: data.result.user.name,
+          email: data.result.user.email,
+          wallet: data.result.wallet.wallet_address,
+          password: password
+        };
+        
+        localStorage.setItem('devspace_user', JSON.stringify(userData));
+        
+        // Automatically log the user in
+        localStorage.setItem('is_logged_in', 'true');
+        
+        console.log('✅ Registration successful! Auto-logging in...');
+        
+        // Redirect to blog page (main app)
+        router.push('/blog');
+      } else {
+        throw new Error('Registration failed.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Registration failed');
+    } finally {
+      setLoading(false);
     }
-  }, [isResizing])
+  };
+
+  // Show loading spinner while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="flex justify-center items-center w-full h-[100vh] px-6 py-12">
+        <div className="bg-gray-800/50 border border-gray-700 p-8 rounded-2xl shadow-xl w-full max-w-xl text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-300">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen space-bg">
-      <div className="flex h-screen">
-        {/* Main Content - Posts List */}
-        <div 
-          className="overflow-y-auto space-bg hide-scrollbar"
-          style={{ 
-            width: selectedPost ? `calc(100% - ${sidebarWidth}px)` : '100%',
-            transition: isResizing ? 'none' : 'width 0.3s ease'
-          }}
-        >
-          <div className="p-6">
-            {/* Header */}
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold text-white mb-2">🚀 DevSpace Community</h1>
-              <p className="text-gray-400">Share knowledge, get help, explore the universe of code</p>
+    <div className="flex justify-center items-center w-full h-[100vh] px-6 py-12">
+      <div className="bg-gray-800/50 border border-gray-700 p-8 rounded-2xl shadow-xl w-full max-w-xl">
+        <h2 className="text-3xl font-extrabold bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent text-center mb-6">
+          Register New User with Wallet
+        </h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-300">
+                Name
+              </label>
+              <input
+                type="text"
+                id="name"
+                className="mt-1 block w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm bg-gray-700 text-white placeholder-gray-400 focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
             </div>
 
-            {/* Create Post Section */}
-            <Card className="space-card mb-6">
-              <CardContent className="p-4">
-                {!showCreatePost ? (
-                  <Button
-                    onClick={() => setShowCreatePost(true)}
-                    className="w-full gradient-orange text-black font-medium hover:glow-orange"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Share your knowledge or ask for help
-                  </Button>
-                ) : (
-                  <div className="space-y-4">
-                    <Input
-                      placeholder="What's your post title?"
-                      className="bg-gray-800/50 border-gray-600 text-white"
-                    />
-                    <Textarea
-                      placeholder="Share your thoughts, code, or question..."
-                      className="bg-gray-800/50 border-gray-600 text-white min-h-[100px]"
-                    />
-                    <div className="flex gap-2">
-                      <Button className="gradient-orange text-black">
-                        <Code className="w-4 h-4 mr-2" />
-                        Post Blog
-                      </Button>
-                      <Button variant="outline" className="bg-orange-500/20 border-orange-500 text-orange-500">
-                        <HelpCircle className="w-4 h-4 mr-2" />
-                        Ask for Help
-                      </Button>
-                      <Button variant="ghost" onClick={() => setShowCreatePost(false)} className="text-gray-400">
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Posts List */}
-            <div className="space-y-4">
-              {posts.map((post) => (
-                <Card key={post.id} className="space-card cursor-pointer" onClick={() => handlePostClick(post)}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarImage src={post.avatar || "/placeholder.svg"} />
-                          <AvatarFallback>{post.author[0]}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-white">{post.author}</span>
-                            <Badge variant="outline" className="text-orange-500 border-orange-500">
-                              Lv.{post.level}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-gray-400">{post.timeAgo}</p>
-                        </div>
-                      </div>
-                      <Badge
-                        variant={post.type === "help" ? "destructive" : "default"}
-                        className={post.type === "help" ? "bg-red-500/20 text-red-400" : "gradient-orange text-black"}
-                      >
-                        {post.type === "help" ? (
-                          <HelpCircle className="w-3 h-3 mr-1" />
-                        ) : (
-                          <Code className="w-3 h-3 mr-1" />
-                        )}
-                        {post.type === "help" ? "Need Help" : "Blog"}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <CardTitle className="text-lg mb-2 text-white hover:text-orange-500 transition-colors">
-                      {post.title}
-                    </CardTitle>
-                    <p className="text-gray-300 mb-4 line-clamp-3">{post.content}</p>
-                    <div className="flex items-center justify-between">
-                      <div className="flex gap-2">
-                        {post.tags.map((tag) => (
-                          <Badge key={tag} variant="secondary" className="bg-gray-800/50 text-gray-300">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-400">
-                        <div 
-                          className="flex items-center gap-1 cursor-pointer hover:text-orange-500 transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleLike(post.id)
-                          }}
-                        >
-                          <ThumbsUp className={`w-4 h-4 ${post.isLiked ? 'text-orange-500 fill-orange-500' : ''}`} />
-                          {post.likes}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MessageCircle className="w-4 h-4" />
-                          {post.comments}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Eye className="w-4 h-4" />
-                          {post.views}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+                Email
+              </label>
+              <input
+                type="email"
+                id="email"
+                className="mt-1 block w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm bg-gray-700 text-white placeholder-gray-400 focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
-          </div>
-        </div>
 
-        {/* Resizable Divider */}
-        {selectedPost && (
-          <div
-            className="w-1 bg-orange-500/20 cursor-col-resize hover:bg-orange-500/40 transition-colors relative"
-            onMouseDown={handleMouseDown}
-          >
-            <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 w-2 bg-orange-500/0 hover:bg-orange-500/20 transition-colors" />
-          </div>
-        )}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+                Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                className="mt-1 block w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm bg-gray-700 text-white placeholder-gray-400 focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
 
-        {/* Right Panel - Post Details + Comments Section */}
-        {selectedPost && (
-          <div 
-            className="h-full space-bg border-l border-orange-500/20 overflow-y-auto hide-scrollbar"
-            style={{ 
-              width: `${sidebarWidth}px`,
-              transition: isResizing ? 'none' : 'width 0.3s ease'
-            }}
-          >
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-orange-500">📖 Post Details</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCloseDetails}
-                  className="text-gray-400 hover:text-white"
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                id="confirmPassword"
+                className="mt-1 block w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm bg-gray-700 text-white placeholder-gray-400 focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-lg text-lg font-medium text-black bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition duration-150 ease-in-out hover:shadow-orange-500/50"
+            >
+              {loading ? (
+                <svg className="animate-spin h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.4 0 0 5.4 0 12h4z" />
+                </svg>
+              ) : (
+                'Register'
+              )}
+            </button>
+            <div className="mt-6 text-center text-gray-400 text-sm">
+              Already have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => router.push('/login')}
+                  className="text-orange-400 hover:text-orange-500 underline font-medium transition-colors"
                 >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
+                  Log in
+                </button>
+              </div> 
 
-              {/* Post Content */}
-              <Card className="space-card mb-6">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Avatar>
-                      <AvatarImage src={selectedPost.avatar || "/placeholder.svg"} />
-                      <AvatarFallback>{selectedPost.author[0]}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-white">{selectedPost.author}</span>
-                        <Badge variant="outline" className="text-orange-500 border-orange-500">
-                          Lv.{selectedPost.level}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-gray-400">{selectedPost.timeAgo}</p>
-                    </div>
-                  </div>
-
-                  <h4 className="text-xl font-semibold text-white mb-4">{selectedPost.title}</h4>
-
-                  {/* Full Content */}
-                  <div className="text-gray-300 mb-6 leading-relaxed whitespace-pre-line">{selectedPost.content}</div>
-
-                  <div className="flex gap-2 mb-6">
-                    {selectedPost.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="bg-gray-800/50 text-gray-300">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center gap-4 text-sm text-gray-400">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className={`${selectedPost.isLiked ? 'text-orange-500 hover:text-orange-400' : 'text-gray-400 hover:text-orange-500'} p-0`}
-                      onClick={() => handleLike(selectedPost.id)}
-                    >
-                      <ThumbsUp className={`w-4 h-4 mr-1 ${selectedPost.isLiked ? 'fill-orange-500' : ''}`} />
-                      {selectedPost.likes}
-                    </Button>
-                    <div className="flex items-center gap-1">
-                      <MessageCircle className="w-4 h-4" />
-                      {selectedPost.comments}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Eye className="w-4 h-4" />
-                      {selectedPost.views}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Comments Section */}
-              <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <MessageCircle className="w-5 h-5 text-orange-500" />💬 Comments ({comments.length})
-              </h4>
-
-              {/* Add Comment */}
-              <Card className="space-card mb-6">
-                <CardContent className="p-4">
-                  <Textarea
-                    placeholder="Share your thoughts..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault()
-                        handleAddComment()
-                      }
-                    }}
-                    className="bg-gray-800/50 border-gray-600 text-white mb-3"
-                  />
-                  <Button 
-                    size="sm" 
-                    className="gradient-orange text-black"
-                    onClick={handleAddComment}
-                    disabled={newComment.trim() === ''}
-                  >
-                    <Send className="w-4 h-4 mr-2" />
-                    Comment
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Comments List */}
-              <div className="space-y-4">
-                {comments.map((comment) => (
-                  <Card key={comment.id} className="space-card">
-                    <CardContent className="p-4">
-                      <div className="flex gap-4">
-                        {/* Voting Section */}
-                        <div className="flex flex-col items-center gap-1">
-                          <button
-                            onClick={() => handleVote(comment.id, "up")}
-                            className={`vote-button ${comment.userVote === "up" ? "active" : ""}`}
-                          >
-                            <ChevronUp className="w-4 h-4" />
-                          </button>
-                          <span
-                            className={`text-sm font-medium ${comment.votes > 0 ? "text-green-500" : comment.votes < 0 ? "text-red-500" : "text-gray-400"}`}
-                          >
-                            {comment.votes}
-                          </span>
-                          <button
-                            onClick={() => handleVote(comment.id, "down")}
-                            className={`vote-button ${comment.userVote === "down" ? "active" : ""}`}
-                          >
-                            <ChevronDown className="w-4 h-4" />
-                          </button>
-                        </div>
-
-                        {/* Comment Content */}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <Avatar className="w-8 h-8">
-                              <AvatarImage src={comment.avatar || "/placeholder.svg"} />
-                              <AvatarFallback>{comment.author[0]}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-white">{comment.author}</span>
-                                <Badge variant="outline" className="text-orange-500 border-orange-500 text-xs">
-                                  Lv.{comment.level}
-                                </Badge>
-                              </div>
-                              <p className="text-xs text-gray-400">{comment.timeAgo}</p>
-                            </div>
-                          </div>
-                          <p className="text-sm text-gray-300 leading-relaxed">{comment.content}</p>
-                        </div>
-                      </div>                                                      
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+          </form>
+        {error && <p className="mt-4 text-red-400">{error}</p>}
       </div>
     </div>
-  )
-}
+  );
+};
+
+export default Register;
