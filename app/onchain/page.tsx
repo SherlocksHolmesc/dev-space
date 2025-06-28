@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Shield, Upload, CheckCircle, Clock, XCircle, Award, FileText, ExternalLink, Plus, Zap } from "lucide-react"
+import {useCertificates} from "@/hooks/useCertificates";
+
 
 interface Certification {
   id: number
@@ -23,6 +25,7 @@ interface Certification {
   proofUrl?: string
   certificateHash?: string
 }
+
 
 const mockCertifications: Certification[] = [
   {
@@ -86,6 +89,8 @@ const mockCertifications: Certification[] = [
 ]
 
 export default function OnChainPage() {
+  const [file, setFile] = useState<File | null>(null);
+  
   const [showSubmitForm, setShowSubmitForm] = useState(false)
   const [formData, setFormData] = useState({
     title: "",
@@ -121,22 +126,58 @@ export default function OnChainPage() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log("Submitting certification:", formData)
-    setShowSubmitForm(false)
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!file) {
+    alert("Please upload a certificate file.");
+    return;
+  }
+
+  const data = new FormData();
+  data.append("title", formData.title);
+  data.append("description", formData.description);
+  data.append("category", formData.category);
+  data.append("skills", formData.skills);
+  data.append("proofUrl", formData.proofUrl);
+  data.append("file", file);
+
+  try {
+    const response = await fetch("/api/mint-cert", {
+      method: "POST",
+      body: data,
+    });
+    const result = await response.json();
+    console.log("✅ Mint result:", result);
+
+    alert("Certificate minted on-chain successfully!");
+
+    setShowSubmitForm(false);
     setFormData({
       title: "",
       description: "",
       category: "",
       skills: "",
       proofUrl: "",
-    })
+    });
+    setFile(null);
+  } catch (error) {
+    console.error("❌ Mint error:", error);
+    alert("Error minting certificate. Check console for details.");
   }
+};
 
-  const approvedCerts = mockCertifications.filter((cert) => cert.status === "approved")
-  const pendingCerts = mockCertifications.filter((cert) => cert.status === "pending")
-  const rejectedCerts = mockCertifications.filter((cert) => cert.status === "rejected")
+
+  const wallet_address = "0x84f18Ed49Ecb64080e40e9b036c59034b85FC39c";
+  const contract_address = "0x01E9de0DeF4Ba278202bF4bAD0103215b8027734";
+
+  const { certifications, loading } = useCertificates(wallet_address, contract_address);
+
+const approvedCerts = certifications.filter((cert: Certification) => cert.status === "approved");
+const pendingCerts: Certification[] = []; // adjust as needed
+const rejectedCerts: Certification[] = []; // adjust as needed
+
+
 
   return (
     <div className="min-h-screen w-full space-bg">
@@ -291,6 +332,20 @@ export default function OnChainPage() {
                                 required
                               />
                             </div>
+                            <div>
+                                <Label htmlFor="file" className="text-white">
+                                 Certificate File
+                                </Label>
+                                <Input
+                                  type="file"
+                                  accept=".pdf,.jpg,.jpeg,.png"
+                                  id="file"
+                                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                                  className="bg-gray-800/50 border-gray-600 text-white"
+                                  required
+                                    />
+                                </div>
+
                             <div className="pt-6">
                               <div className="flex gap-2">
                                 <Button type="submit" className="gradient-orange text-black flex-1">
