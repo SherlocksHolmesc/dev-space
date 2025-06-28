@@ -41,6 +41,13 @@ interface BlogContribution {
   createdAt: string
 }
 
+interface UserData {
+  name: string
+  email: string
+  password: string
+  wallet: string // important: matches localStorage key you saved in register page
+}
+
 const achievements: Achievement[] = [
   {
     id: 1,
@@ -160,6 +167,19 @@ const blogContributions: BlogContribution[] = [
 
 export default function ProfilePage() {
   const [showScrollToTop, setShowScrollToTop] = useState(false)
+  const [user, setUser] = useState<UserData | null>(null)
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('devspace_user')
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser)
+        setUser(parsed)
+      } catch (err) {
+        console.error("Failed to parse user data", err)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -245,9 +265,21 @@ export default function ProfilePage() {
           <div className="space-y-4">
             <div className="flex items-center justify-center gap-3">
               <Rocket className="w-6 h-6 text-orange-500" />
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">
-                John Developer
-              </h1>
+                <div>
+                  <h1 className="text-5xl font-bold bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">
+                    {user?.name
+                      ? user.name
+                          .split(' ')
+                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                          .join(' ')
+                      : "Unknown User"}
+                  </h1>
+                  {user?.wallet && (
+                    <p className="mt-2 text-sm text-gray-400 break-all">
+                      {user.wallet}
+                    </p>
+                  )}
+                </div>
               <Zap className="w-6 h-6 text-orange-500" />
             </div>
 
