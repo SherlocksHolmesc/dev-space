@@ -152,30 +152,53 @@ export default function OnChainPage() {
 
     alert("Certificate minted on-chain successfully!");
 
-    setShowSubmitForm(false);
-    setFormData({
-      title: "",
-      description: "",
-      category: "",
-      skills: "",
-      proofUrl: "",
-    });
-    setFile(null);
+// Immediately add to localCerts for instant display
+setLocalCerts(prev => [
+  {
+    id: result.result.result.nft_token_id ?? Date.now(),
+    title: formData.title,
+    description: formData.description,
+    status: "pending",
+    submittedAt: new Date().toISOString(),
+    category: formData.category,
+    skills: formData.skills.split(',').map(s => s.trim()),
+    proofUrl: formData.proofUrl ?? result.result.result.certificate_image,
+    certificateHash: result.result.result.transactionHash,
+  },
+  ...prev
+]);
+
+// Reset form
+setShowSubmitForm(false);
+setFormData({
+  title: "",
+  description: "",
+  category: "",
+  skills: "",
+  proofUrl: "",
+});
+setFile(null);
   } catch (error) {
     console.error("❌ Mint error:", error);
     alert("Error minting certificate. Check console for details.");
   }
 };
 
+  const [localCerts, setLocalCerts] = useState<Certification[]>([]);
 
   const wallet_address = "0x84f18Ed49Ecb64080e40e9b036c59034b85FC39c";
   const contract_address = "0x01E9de0DeF4Ba278202bF4bAD0103215b8027734";
 
-  const { certifications, loading } = useCertificates(wallet_address, contract_address);
+  const { certifications, loading ,refetch} = useCertificates(wallet_address, contract_address);
 
-const approvedCerts = certifications.filter((cert: Certification) => cert.status === "approved");
-const pendingCerts: Certification[] = []; // adjust as needed
-const rejectedCerts: Certification[] = []; // adjust as needed
+// Combine all sources
+const allCerts = [...localCerts, ...certifications, ...mockCertifications];
+
+// Count by status
+const approvedCerts = allCerts.filter(cert => cert.status === "approved");
+const pendingCerts = allCerts.filter(cert => cert.status === "pending");
+const rejectedCerts = allCerts.filter(cert => cert.status === "rejected");
+
 
 
 
@@ -374,7 +397,8 @@ const rejectedCerts: Certification[] = []; // adjust as needed
                   <h2 className="text-2xl font-bold text-white">Your Certifications</h2>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {mockCertifications.map((cert) => (
+                    {[...localCerts,...mockCertifications, ...certifications].map((cert) => (
+
                       <Card key={cert.id} className="space-card">
                         <CardHeader>
                           <div className="flex items-start justify-between">
@@ -428,6 +452,7 @@ const rejectedCerts: Certification[] = []; // adjust as needed
                                   variant="outline"
                                   size="sm"
                                   className="bg-gray-800/50 border-gray-600 text-gray-300"
+                                  onClick={() => window.open(cert.proofUrl, "_blank")}
                                 >
                                   <ExternalLink className="w-4 h-4 mr-2" />
                                   View Proof
@@ -438,6 +463,12 @@ const rejectedCerts: Certification[] = []; // adjust as needed
                                   variant="outline"
                                   size="sm"
                                   className="bg-orange-500/20 border-orange-500 text-orange-500"
+                                  onClick={() =>
+                                    window.open(
+                                      `https://testnet.marchain-explorer.com/tx/${cert.certificateHash}`,
+                                      "_blank"
+                                    )
+                                  }
                                 >
                                   <FileText className="w-4 h-4 mr-2" />
                                   Certificate
