@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Trophy, Shield, User, Zap, Star, Award } from "lucide-react"
+import { Home, Trophy, Shield, User, Zap, Star, Award, Wallet } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const menuItems = [
@@ -30,6 +30,12 @@ const menuItems = [
     url: "/profile",
     icon: User,
     description: "Your Journey",
+  },
+  {
+    title: "Wallet",
+    url: "/wallet",
+    icon: Wallet,
+    description: "Manage Funds",
   },
 ]
 
