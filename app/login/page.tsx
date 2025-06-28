@@ -114,6 +114,20 @@ const LoginPage = () => {
           </button>
         </form>
 
+        {/* Sign up link */}
+        <div className="mt-6 text-center">
+          <p className="text-gray-400">
+            Don't have an account?{" "}
+            <button
+              type="button"
+              onClick={() => router.push('/')}
+              className="text-orange-400 hover:text-orange-500 underline font-medium transition-colors"
+            >
+              Sign up here
+            </button>
+          </p>
+        </div>
+
         {error && (
           <div className="mt-6 p-4 rounded-lg bg-red-800/30 text-red-300 border border-red-700">
             <p className="font-bold">Error:</p>

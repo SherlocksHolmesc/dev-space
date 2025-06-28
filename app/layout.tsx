@@ -2,15 +2,14 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { SidebarProvider } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
+import { LayoutWrapper } from "@/components/layout-wrapper"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "DevSpace",
   description: "A gamified developer community platform",
-    generator: 'v0.dev'
+  generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -21,12 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={inter.className}>
-        <SidebarProvider defaultOpen={true}>
-          <div className="flex w-full space-bg">
-            <AppSidebar />
-            <main className="relative flex-1 pl-16">{children}</main>
-          </div>
-        </SidebarProvider>
+        <LayoutWrapper>{children}</LayoutWrapper>
       </body>
     </html>
   )

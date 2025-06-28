@@ -46,7 +46,7 @@ export function AppSidebar() {
   const [user, setUser] = useState<any>(null)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
 
-  // Check authentication status on component mount
+  // Check authentication status on component mount and when pathname changes
   useEffect(() => {
     const checkAuth = () => {
       try {
@@ -69,7 +69,7 @@ export function AppSidebar() {
     }
 
     checkAuth()
-  }, [])
+  }, [pathname]) // Re-check auth when pathname changes
 
   const handleLogout = () => {
     try {
@@ -86,13 +86,14 @@ export function AppSidebar() {
   return (
     <div
       className={cn(
-        "fixed left-0 top-0 h-full space-bg border-r border-orange-500/20 transition-all duration-300 z-40",
+        "fixed left-0 top-0 h-screen space-bg border-r border-orange-500/20 transition-all duration-300 z-40 flex flex-col overflow-hidden",
         isHovered ? "w-64" : "w-16",
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="p-4">
+      {/* Header */}
+      <div className="p-4 flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg gradient-orange flex items-center justify-center flex-shrink-0">
             <Zap className="w-4 h-4 text-black" />
@@ -108,7 +109,8 @@ export function AppSidebar() {
         </div>
       </div>
 
-      <div className="px-2">
+      {/* Navigation Menu - Scrollable */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
         {menuItems.map((item) => (
           <Link
             key={item.title}
@@ -146,19 +148,28 @@ export function AppSidebar() {
         ))}
       </div>
 
-      <div className="absolute bottom-4 left-2 right-2 space-y-2">
+      {/* Bottom Section - Always Visible */}
+      <div className="p-2 space-y-2 flex-shrink-0">
         {/* Level Progress */}
-        <div className={cn("transition-all duration-300", isHovered ? "opacity-100" : "opacity-0")}>
-          <div className="space-card p-3 rounded-lg mb-2">
-            <div className="flex items-center gap-2 mb-2">
-              <Award className="w-4 h-4 text-orange-500" />
-              <span className="text-sm font-medium text-orange-500">Level 5</span>
-            </div>
-            <div className="w-full bg-gray-700 rounded-full h-2">
-              <div className="gradient-orange h-2 rounded-full" style={{ width: "75%" }}></div>
-            </div>
-            <p className="text-xs text-gray-400 mt-1">750/1000 XP</p>
+        <div className="space-card p-3 rounded-lg mb-2">
+          <div className="flex items-center gap-2 mb-2">
+            <Award className="w-4 h-4 text-orange-500" />
+            <span className={cn(
+              "text-sm font-medium text-orange-500 transition-all duration-300 overflow-hidden whitespace-nowrap",
+              isHovered ? "w-auto opacity-100" : "w-0 opacity-0"
+            )}>
+              Level 5
+            </span>
           </div>
+          <div className="w-full bg-gray-700 rounded-full h-2">
+            <div className="gradient-orange h-2 rounded-full" style={{ width: "75%" }}></div>
+          </div>
+          <p className={cn(
+            "text-xs text-gray-400 mt-1 transition-all duration-300 overflow-hidden whitespace-nowrap",
+            isHovered ? "w-auto opacity-100" : "w-0 opacity-0"
+          )}>
+            750/1000 XP
+          </p>
         </div>
 
         {/* Logout Button */}
