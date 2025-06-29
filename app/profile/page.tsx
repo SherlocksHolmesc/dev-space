@@ -99,86 +99,72 @@ const achievements: Achievement[] = [
   },
 ]
 
-const blogContributions: BlogContribution[] = [
-  {
-    id: 1,
-    title: "Advanced React Patterns You Should Know",
-    type: "post",
-    content:
-      "In this comprehensive guide, I'll walk you through advanced React patterns that will make your code more maintainable...",
-    likes: 45,
-    comments: 12,
-    views: 234,
-    createdAt: "2024-01-20",
-  },
-  {
-    id: 2,
-    title: "Re: How to optimize React performance?",
-    type: "comment",
-    content:
-      "Great question! Here are some key strategies I've found effective: 1. Use React.memo for component memoization...",
-    likes: 23,
-    comments: 5,
-    views: 89,
-    createdAt: "2024-01-18",
-  },
-  {
-    id: 3,
-    title: "Need help with TypeScript generics",
-    type: "help",
-    content:
-      "I'm struggling with creating reusable TypeScript generics for my API layer. Can someone provide guidance?",
-    likes: 8,
-    comments: 15,
-    views: 67,
-    createdAt: "2024-01-15",
-  },
-  {
-    id: 4,
-    title: "Building Scalable Node.js Applications",
-    type: "post",
-    content: "Learn how to build scalable Node.js applications with proper architecture and best practices...",
-    likes: 67,
-    comments: 18,
-    views: 312,
-    createdAt: "2024-01-12",
-  },
-  {
-    id: 5,
-    title: "Mastering CSS Grid and Flexbox",
-    type: "post",
-    content: "A comprehensive guide to modern CSS layout techniques for responsive web design...",
-    likes: 89,
-    comments: 24,
-    views: 445,
-    createdAt: "2024-01-10",
-  },
-  {
-    id: 6,
-    title: "Docker Best Practices for Development",
-    type: "post",
-    content: "Essential Docker practices that will improve your development workflow and deployment process...",
-    likes: 56,
-    comments: 14,
-    views: 278,
-    createdAt: "2024-01-08",
-  },
-]
-
 export default function ProfilePage() {
   const [showScrollToTop, setShowScrollToTop] = useState(false)
   const [user, setUser] = useState<UserData | null>(null)
+  const [userContributions, setUserContributions] = useState<BlogContribution[]>([])
 
   useEffect(() => {
     const storedUser = localStorage.getItem('devspace_user')
+    let parsedUser: UserData | null = null
     if (storedUser) {
       try {
-        const parsed = JSON.parse(storedUser)
-        setUser(parsed)
+        parsedUser = JSON.parse(storedUser)
+        setUser(parsedUser)
       } catch (err) {
         console.error("Failed to parse user data", err)
       }
     }
+
+    // Get posts and comments from localStorage
+    const postsRaw = localStorage.getItem('devspace_blogs')
+    const commentsRaw = localStorage.getItem('devspace_comments')
+    let posts: any[] = []
+    let comments: any[] = []
+    if (postsRaw) posts = JSON.parse(postsRaw)
+    if (commentsRaw) comments = JSON.parse(commentsRaw)
+
+    // Filter by user (by name or wallet)
+    let userPosts = posts
+    let userComments = comments
+    if (parsedUser) {
+      userPosts = posts.filter(
+        (p) => p.author === parsedUser.name || (parsedUser.wallet && p.wallet === parsedUser.wallet)
+      )
+      userComments = comments.filter(
+        (c) => c.author === parsedUser.name || (parsedUser.wallet && c.wallet === parsedUser.wallet)
+      )
+    }
+
+    // Map to BlogContribution format
+    const postContribs: BlogContribution[] = userPosts.map((p) => ({
+      id: p.id,
+      title: p.title,
+      type: "post",
+      content: p.content,
+      likes: p.likes || 0,
+      comments: p.comments || 0,
+      views: p.views || 0,
+      createdAt: p.time || "Unknown",
+    }))
+    const commentContribs: BlogContribution[] = userComments.map((c) => ({
+      id: c.id,
+      title: `Commented on post #${c.postId}`,
+      type: "comment",
+      content: c.content,
+      likes: c.votes || 0,
+      comments: 0,
+      views: 0,
+      createdAt: c.time || "Unknown",
+    }))
+    // Combine and sort by createdAt (if possible)
+    const all = [...postContribs, ...commentContribs].sort((a, b) => {
+      // Try to sort by timestamp if available
+      const aTime = Date.parse(a.createdAt) || 0
+      const bTime = Date.parse(b.createdAt) || 0
+      return bTime - aTime
+    })
+    setUserContributions(all)
   }, [])
 
   useEffect(() => {
@@ -439,49 +425,55 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {blogContributions.map((contribution) => (
-                    <div
-                      key={contribution.id}
-                      className="p-4 rounded-lg border border-gray-700 hover:border-orange-500/30 transition-all"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <Badge className={getTypeColor(contribution.type)} variant="secondary">
-                              {getTypeIcon(contribution.type)}
-                              <span className="ml-1 capitalize">{contribution.type}</span>
-                            </Badge>
-                            <span className="text-sm text-gray-400">{contribution.createdAt}</span>
-                          </div>
-                          <h4 className="text-lg font-semibold text-white mb-2">{contribution.title}</h4>
-                          <p className="text-gray-300 text-sm line-clamp-2">{contribution.content}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 text-sm text-gray-400">
-                          <div className="flex items-center gap-1">
-                            <ThumbsUp className="w-4 h-4" />
-                            {contribution.likes}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <MessageCircle className="w-4 h-4" />
-                            {contribution.comments}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Eye className="w-4 h-4" />
-                            {contribution.views}
-                          </div>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="bg-orange-500/20 border-orange-500 text-orange-500"
-                        >
-                          View Details
-                        </Button>
-                      </div>
+                  {userContributions.length === 0 ? (
+                    <div className="text-gray-400 text-center col-span-2 py-8">
+                      No recent contributions yet. Go post or comment to see them here!
                     </div>
-                  ))}
+                  ) : (
+                    userContributions.map((contribution: BlogContribution) => (
+                      <div
+                        key={contribution.id + contribution.type}
+                        className="p-4 rounded-lg border border-gray-700 hover:border-orange-500/30 transition-all"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <Badge className={getTypeColor(contribution.type)} variant="secondary">
+                                {getTypeIcon(contribution.type)}
+                                <span className="ml-1 capitalize">{contribution.type}</span>
+                              </Badge>
+                              <span className="text-sm text-gray-400">{contribution.createdAt}</span>
+                            </div>
+                            <h4 className="text-lg font-semibold text-white mb-2">{contribution.title}</h4>
+                            <p className="text-gray-300 text-sm line-clamp-2">{contribution.content}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4 text-sm text-gray-400">
+                            <div className="flex items-center gap-1">
+                              <ThumbsUp className="w-4 h-4" />
+                              {contribution.likes}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <MessageCircle className="w-4 h-4" />
+                              {contribution.comments}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Eye className="w-4 h-4" />
+                              {contribution.views}
+                            </div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="bg-orange-500/20 border-orange-500 text-orange-500"
+                          >
+                            View Details
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>

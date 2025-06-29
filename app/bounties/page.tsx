@@ -179,6 +179,88 @@ const mockHistory: BountyHistory[] = [
   },
 ]
 
+// Helper functions for localStorage operations
+const JOURNEY_STORAGE_KEY = 'userJourney_v2' // versioned key for better data management
+const BOUNTIES_STORAGE_KEY = 'userBounties_v2'
+
+const saveJourneyToStorage = (journey: BountyHistory[]) => {
+  try {
+    localStorage.setItem(JOURNEY_STORAGE_KEY, JSON.stringify(journey))
+    console.log('Journey saved to localStorage:', journey.length, 'items')
+  } catch (error) {
+    console.error('Error saving journey to localStorage:', error)
+    toast.error('Failed to save progress. Please check your browser storage.')
+  }
+}
+
+const loadJourneyFromStorage = (): BountyHistory[] => {
+  try {
+    const stored = localStorage.getItem(JOURNEY_STORAGE_KEY)
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      console.log('Journey loaded from localStorage:', parsed.length, 'items')
+      return parsed
+    }
+  } catch (error) {
+    console.error('Error loading journey from localStorage:', error)
+    // If there's an error, try to migrate from old storage key
+    try {
+      const oldStored = localStorage.getItem('userJourney')
+      if (oldStored) {
+        const oldParsed = JSON.parse(oldStored)
+        console.log('Migrating from old journey storage')
+        saveJourneyToStorage(oldParsed) // Save to new key
+        localStorage.removeItem('userJourney') // Remove old key
+        return oldParsed
+      }
+    } catch (migrationError) {
+      console.error('Error migrating old journey data:', migrationError)
+    }
+  }
+  console.log('No stored journey found, using mock history')
+  return mockHistory
+}
+
+const saveBountiesToStorage = (bounties: Bounty[]) => {
+  try {
+    // Only save user-created bounties (not initial bounties)
+    const userBounties = bounties.filter(b => 
+      !initialBounties.some(mb => mb.title === b.title && mb.description === b.description)
+    )
+    localStorage.setItem(BOUNTIES_STORAGE_KEY, JSON.stringify(userBounties))
+    console.log('User bounties saved to localStorage:', userBounties.length, 'items')
+  } catch (error) {
+    console.error('Error saving bounties to localStorage:', error)
+  }
+}
+
+const loadBountiesFromStorage = (): Bounty[] => {
+  try {
+    const stored = localStorage.getItem(BOUNTIES_STORAGE_KEY)
+    if (stored) {
+      const userBounties = JSON.parse(stored)
+      console.log('User bounties loaded from localStorage:', userBounties.length, 'items')
+      return [...userBounties, ...initialBounties]
+    }
+  } catch (error) {
+    console.error('Error loading bounties from localStorage:', error)
+    // Try to migrate from old storage
+    try {
+      const oldStored = localStorage.getItem('userBounties')
+      if (oldStored) {
+        const oldBounties = JSON.parse(oldStored)
+        console.log('Migrating from old bounties storage')
+        localStorage.setItem(BOUNTIES_STORAGE_KEY, oldStored)
+        localStorage.removeItem('userBounties')
+        return [...oldBounties, ...initialBounties]
+      }
+    } catch (migrationError) {
+      console.error('Error migrating old bounties data:', migrationError)
+    }
+  }
+  return initialBounties
+}
+
 export default function BountiesPage() {
   const [selectedHistory, setSelectedHistory] = useState<BountyHistory | null>(null)
   const [showHistoryDetails, setShowHistoryDetails] = useState(false)
@@ -187,41 +269,27 @@ export default function BountiesPage() {
   const [showCreateBounty, setShowCreateBounty] = useState(false)
   const [newBounty, setNewBounty] = useState({ title: '', description: '', reward: '', difficulty: '', tags: '' })
   const [bounties, setBounties] = useState<Bounty[]>([])
-  const [userJourney, setUserJourney] = useState<BountyHistory[]>(mockHistory)
+  const [userJourney, setUserJourney] = useState<BountyHistory[]>([])
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true)
 
-
-  // Load bounties and journey from localStorage on mount
+  // Load data from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem('userBounties')
-    let userBounties: Bounty[] = []
-    if (stored) {
-      try {
-        userBounties = JSON.parse(stored)
-      } catch {}
-    }
-    setBounties([...userBounties, ...initialBounties])
+    console.log('Loading data from localStorage...')
     
-
-    // Load user journey from localStorage
-    const storedJourney = localStorage.getItem('userJourney')
-    if (storedJourney) {
-      try {
-        const parsedJourney = JSON.parse(storedJourney)
-        // Merge stored journey with mock history, preserving claimed status
-        const mergedJourney = mockHistory.map(mockItem => {
-          const storedItem = parsedJourney.find((item: BountyHistory) => 
-            item.title === mockItem.title && item.description === mockItem.description
-          )
-          return storedItem ? { ...mockItem, ...storedItem } : mockItem
-        })
-        setUserJourney([...parsedJourney.filter((item: BountyHistory) => 
-          !mockHistory.some(mock => mock.title === item.title && mock.description === item.description)
-        ), ...mergedJourney])
-      } catch {}
-    }
+    // Load bounties
+    const loadedBounties = loadBountiesFromStorage()
+    setBounties(loadedBounties)
+    
+    // Load journey
+    const loadedJourney = loadJourneyFromStorage()
+    setUserJourney(loadedJourney)
+    
+    setIsLoading(false)
+    console.log('Data loading completed')
   }, [])
 
+  // Get user info
   useEffect(() => {
     const getUserInfo = () => {
       try {
@@ -242,21 +310,20 @@ export default function BountiesPage() {
     };
     getUserInfo();
   }, []);
-  
 
-  // Save user-created bounties to localStorage whenever bounties change (only user bounties)
+  // Save bounties to localStorage whenever bounties change
   useEffect(() => {
-    // Only save bounties that are not in initialBounties (assume initialBounties have unique titles)
-    const userBounties = bounties.filter(b => !initialBounties.some(mb => mb.title === b.title && mb.description === b.description))
-    localStorage.setItem('userBounties', JSON.stringify(userBounties))
-  }, [bounties])
+    if (!isLoading && bounties.length > 0) {
+      saveBountiesToStorage(bounties)
+    }
+  }, [bounties, isLoading])
 
-  // Save user journey to localStorage whenever journey changes
+  // Save journey to localStorage whenever journey changes
   useEffect(() => {
-    // Only save user-accepted bounties (not the mock ones)
-    const userAcceptedBounties = userJourney.filter(j => !mockHistory.some(mh => mh.title === j.title && mh.description === j.description))
-    localStorage.setItem('userJourney', JSON.stringify(userAcceptedBounties))
-  }, [userJourney])
+    if (!isLoading && userJourney.length > 0) {
+      saveJourneyToStorage(userJourney)
+    }
+  }, [userJourney, isLoading])
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -315,9 +382,9 @@ export default function BountiesPage() {
       return
     }
 
-    // Create new journey item
+    // Create new journey item with unique ID
     const newJourneyItem: BountyHistory = {
-      id: Date.now(),
+      id: Date.now() + Math.random(), // Ensure unique ID
       title: bounty.title,
       status: "in-progress",
       reward: bounty.reward,
@@ -329,8 +396,12 @@ export default function BountiesPage() {
       claimed: false,
     }
 
-    // Add to journey
-    setUserJourney([newJourneyItem, ...userJourney])
+    // Add to journey at the beginning
+    const updatedJourney = [newJourneyItem, ...userJourney]
+    setUserJourney(updatedJourney)
+    
+    // Immediately save to localStorage
+    saveJourneyToStorage(updatedJourney)
     
     // Show success message
     toast.success(`✅ Challenge accepted! "${bounty.title}" added to your journey.`)
@@ -338,6 +409,8 @@ export default function BountiesPage() {
     // Close bounty details if open
     setShowBountyDetails(false)
     setSelectedBounty(null)
+    
+    console.log('Challenge accepted and saved:', newJourneyItem.title)
   }
 
   const handleSubmitToReview = (historyItem: BountyHistory) => {
@@ -356,6 +429,7 @@ export default function BountiesPage() {
     )
     
     setUserJourney(updatedJourney)
+    saveJourneyToStorage(updatedJourney) // Save immediately
     
     // Update the selected history item for immediate UI update
     setSelectedHistory({
@@ -433,112 +507,115 @@ export default function BountiesPage() {
                 : item
         );
         setUserJourney(updatedJourney);
+        saveJourneyToStorage(updatedJourney); // Save immediately
+        
         setSelectedHistory(prev => prev ? { ...prev, feedback: `Prize claimed successfully! 🎉 TX: ${data.txHash}`, claimed: true, claimTxHash: data.txHash } : prev);
 
     } catch (error) {
         console.error('Claim prize error:', error);
         toast.error("❌ Failed to claim prize. Please try again.");
     }
-};
+  };
 
+  const handleCreateBounty = async (e: React.FormEvent) => {
+    e.preventDefault();
 
+    try {
+        const storedUser = localStorage.getItem('devspace_user');
+        if (!storedUser) {
+            toast.error("❌ Please log in to create a bounty.");
+            return;
+        }
 
-const handleCreateBounty = async (e: React.FormEvent) => {
-  e.preventDefault();
+        const parsedUser = JSON.parse(storedUser);
+        const sender = parsedUser.wallet;
+        const recipient = "0x5E9C287CA011343B9CC8F30A30527bF6fede918b"; // escrow wallet
+        const contract = "0x4579c765c30121B253C452B0543203B617152Ae2";
+        const amount = parseInt(newBounty.reward.trim(), 10);
 
-  try {
-      const storedUser = localStorage.getItem('devspace_user');
-      if (!storedUser) {
-          toast.error("❌ Please log in to create a bounty.");
-          return;
-      }
+        if (!newBounty.title || !newBounty.description || !newBounty.difficulty || isNaN(amount) || amount <= 0) {
+            toast.error("❌ Please fill in all fields correctly with a valid reward amount.");
+            return;
+        }
+        if (!sender) {
+            toast.error("❌ Wallet not found, please log in again.");
+            return;
+        }
 
-      const parsedUser = JSON.parse(storedUser);
-      const sender = parsedUser.wallet;
-      const recipient = "0x5E9C287CA011343B9CC8F30A30527bF6fede918b"; // escrow wallet
-      const contract = "0x4579c765c30121B253C452B0543203B617152Ae2";
-      const amount = parseInt(newBounty.reward.trim(), 10);
+        console.log("Creating bounty with:", {
+            sender,
+            recipient,
+            amount,
+            contract
+        });
 
-      if (!newBounty.title || !newBounty.description || !newBounty.difficulty || isNaN(amount) || amount <= 0) {
-          toast.error("❌ Please fill in all fields correctly with a valid reward amount.");
-          return;
-      }
-      if (!sender) {
-          toast.error("❌ Wallet not found, please log in again.");
-          return;
-      }
+        const loadingToast = toast.loading("⏳ Transferring tokens and creating bounty...");
 
-      console.log("Creating bounty with:", {
-          sender,
-          recipient,
-          amount,
-          contract
-      });
+        const res = await fetch('/api/mint', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                sender,
+                recipient,
+                amount,
+                contract
+            })
+        });
 
-      const loadingToast = toast.loading("⏳ Transferring tokens and creating bounty...");
+        const data = await res.json();
+        console.log("Mint/Transfer API response:", data);
 
-      const res = await fetch('/api/mint', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-              sender,
-              recipient,
-              amount,
-              contract
-          })
-      });
+        if (!res.ok || !data.txHash) {
+            console.error("Bounty creation failed:", data);
+            toast.dismiss(loadingToast);
+            throw new Error(data.error || "Failed to create bounty on-chain. No transaction hash received.");
+        }
 
-      const data = await res.json();
-      console.log("Mint/Transfer API response:", data);
+        // Add to local bounties
+        const newBountyObject: Bounty = {
+            id: Date.now() + Math.random(), // Ensure unique ID
+            title: newBounty.title,
+            description: newBounty.description,
+            reward: amount,
+            currency: "MAS",
+            difficulty: newBounty.difficulty as "Easy" | "Medium" | "Hard" | "Expert",
+            timeLeft: "14 days left",
+            participants: 0,
+            maxParticipants: 10,
+            tags: newBounty.tags ? newBounty.tags.split(",").map(tag => tag.trim()) : [],
+            sponsor: parsedUser.name || "Anonymous",
+            sponsorAvatar: "/placeholder.svg"
+        };
 
-      if (!res.ok || !data.txHash) {
-          console.error("Bounty creation failed:", data);
-          toast.dismiss(loadingToast);
-          throw new Error(data.error || "Failed to create bounty on-chain. No transaction hash received.");
-      }
+        const updatedBounties = [newBountyObject, ...bounties];
+        setBounties(updatedBounties);
+        saveBountiesToStorage(updatedBounties); // Save immediately
+        
+        setNewBounty({ title: '', description: '', reward: '', difficulty: '', tags: '' });
+        setShowCreateBounty(false);
 
-      // Add to local bounties
-      const newBountyObject: Bounty = {
-          id: Date.now(),
-          title: newBounty.title,
-          description: newBounty.description,
-          reward: amount,
-          currency: "MAS",
-          difficulty: newBounty.difficulty as "Easy" | "Medium" | "Hard" | "Expert",
-          timeLeft: "14 days left",
-          participants: 0,
-          maxParticipants: 10,
-          tags: newBounty.tags ? newBounty.tags.split(",").map(tag => tag.trim()) : [],
-          sponsor: parsedUser.name || "Anonymous",
-          sponsorAvatar: "/placeholder.svg"
-      };
+        toast.dismiss(loadingToast);
 
-      setBounties([newBountyObject, ...bounties]);
-      setNewBounty({ title: '', description: '', reward: '', difficulty: '', tags: '' });
-      setShowCreateBounty(false);
+        // Create explorer URL with the transaction hash
+        const explorerUrl = `https://explorer-testnet.maschain.com/${data.txHash}`;
+        console.log("Bounty created successfully, showing success toast");
 
-      toast.dismiss(loadingToast);
+        // Show success popup with transaction link
+        toast.success(
+            <span>
+                🎉 Bounty created successfully!{" "}
+                <a href={explorerUrl} target="_blank" rel="noopener noreferrer" className="underline text-blue-300">
+                    View Transaction
+                </a>
+            </span>,
+            { duration: 8000 }
+        );
 
-      // Create explorer URL with the transaction hash
-      const explorerUrl = `https://explorer-testnet.maschain.com/${data.txHash}`;
-      console.log("Bounty created successfully, showing success toast");
-
-      // Show success popup with transaction link
-      toast.success(
-          <span>
-              🎉 Bounty created successfully!{" "}
-              <a href={explorerUrl} target="_blank" rel="noopener noreferrer" className="underline text-blue-300">
-                  View Transaction
-              </a>
-          </span>,
-          { duration: 8000 }
-      );
-
-  } catch (error: any) {
-      console.error("Create Bounty Error:", error);
-      toast.error(`❌ Error: ${error.message}`);
-  }
-};
+    } catch (error: any) {
+        console.error("Create Bounty Error:", error);
+        toast.error(`❌ Error: ${error.message}`);
+    }
+  };
 
   // Remove a bounty by id (and update localStorage)
   function handleDeleteBounty(id: number) {
@@ -548,14 +625,36 @@ const handleCreateBounty = async (e: React.FormEvent) => {
     
     const updated = bounties.filter(b => b.id !== id);
     setBounties(updated);
-    // Only save user-created bounties
-    const userBounties = updated.filter(b => !initialBounties.some(mb => mb.title === b.title && mb.description === b.description));
-    localStorage.setItem('userBounties', JSON.stringify(userBounties));
+    saveBountiesToStorage(updated); // Save immediately
+    
     setShowBountyDetails(false);
     setSelectedBounty(null);
     
     // Show success toast
     toast.success(`🗑️ "${bountyTitle}" has been deleted successfully!`);
+  }
+
+  // Add function to clear all localStorage data (for testing)
+  const clearAllData = () => {
+    localStorage.removeItem(JOURNEY_STORAGE_KEY);
+    localStorage.removeItem(BOUNTIES_STORAGE_KEY);
+    localStorage.removeItem('userJourney'); // Remove old key too
+    localStorage.removeItem('userBounties'); // Remove old key too
+    setUserJourney(mockHistory);
+    setBounties(initialBounties);
+    toast.success("All data cleared! Refreshing...");
+    setTimeout(() => window.location.reload(), 1000);
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen space-bg flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-orange-500 text-xl mb-2">Loading your bounty journey...</div>
+          <div className="animate-spin w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full mx-auto"></div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -579,6 +678,14 @@ const handleCreateBounty = async (e: React.FormEvent) => {
                         <span className="text-2xl font-bold">2,450</span>
                       </div>
                       <p className="opacity-90">Total Earned</p>
+                      {/* Debug button - remove in production */}
+                      <button 
+                        onClick={clearAllData}
+                        className="mt-2 text-xs bg-red-500 text-white px-2 py-1 rounded opacity-50 hover:opacity-100"
+                        title="Clear all localStorage data (Debug)"
+                      >
+                        🗑️ Clear Data
+                      </button>
                     </div>
                   </div>
                 </div>

@@ -19,6 +19,7 @@ interface BlogPost {
   title: string
   content: string
   author: string
+  wallet?: string
   avatar: string
   tags: string[]
   likes: number
@@ -36,6 +37,7 @@ interface Comment {
   id: number
   postId: number
   author: string
+  wallet?: string
   avatar: string
   content: string
   time: string
@@ -179,6 +181,12 @@ export default function BlogsPage() {
   // Using blockchain audit trail
   const { createAuditTrail, loading: auditLoading } = useAuditTrail()
 
+  // Get user info from localStorage at the top of BlogsPage
+  const storedUser = typeof window !== 'undefined' ? localStorage.getItem('devspace_user') : null;
+  const user = storedUser ? JSON.parse(storedUser) : null;
+  const userName = user?.name || "Current User";
+  const userWallet = user?.wallet || "";
+
   // Save posts to localStorage whenever they change
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -301,7 +309,8 @@ export default function BlogsPage() {
       id: Date.now(),
       title: newTitle,
       content: newContent,
-      author: "Current User",
+      author: userName,
+      wallet: userWallet,
       avatar: "/placeholder.svg",
       tags: newTags.split(",").map(t => t.trim()).filter(t => t),
       likes: 0,
@@ -329,7 +338,8 @@ export default function BlogsPage() {
     const comment: Comment = {
       id: Date.now(),
       postId,
-      author: "Current User",
+      author: userName,
+      wallet: userWallet,
       avatar: "/placeholder.svg",
       content: newComment,
       time: "Just now",
