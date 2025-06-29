@@ -110,7 +110,7 @@ export default function OnChainPage() {
   data.append("file", file);
 
   try {
-    const response = await fetch("/api/mint-cert", {
+    const response = await fetch("/api/onchain/mint-cert", {
       method: "POST",
       body: data,
     });

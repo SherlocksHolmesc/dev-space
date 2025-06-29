@@ -23,7 +23,7 @@ export function useCertificates(walletAddress: string, contractAddress: string) 
   const fetchCertificates = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("/api/get-certificates", {
+      const res = await axios.get("/api/onchain/get-certificates", {
         params: { walletAddress, contractAddress },
       });
       setCertifications(res.data);
