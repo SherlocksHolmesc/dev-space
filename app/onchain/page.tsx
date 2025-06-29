@@ -41,17 +41,7 @@ const mockCertifications: Certification[] = [
     proofUrl: "https://github.com/user/react-patterns-demo",
     certificateHash: "0x1234...abcd",
   },
-  {
-    id: 2,
-    title: "Smart Contract Security Audit",
-    description:
-      "Successfully completed security audit of a DeFi protocol, identifying and fixing critical vulnerabilities.",
-    status: "pending",
-    submittedAt: "2024-01-20",
-    category: "Blockchain Security",
-    skills: ["Solidity", "Security", "DeFi"],
-    proofUrl: "https://github.com/user/defi-audit-report",
-  },
+  
   {
     id: 3,
     title: "Full-Stack Application Architecture",
@@ -62,30 +52,7 @@ const mockCertifications: Certification[] = [
     category: "Full-Stack Development",
     skills: ["Node.js", "React", "Docker", "AWS"],
   },
-  {
-    id: 4,
-    title: "Machine Learning Model Deployment",
-    description: "Deployed ML models to production with proper monitoring and scaling capabilities.",
-    status: "approved",
-    submittedAt: "2024-01-05",
-    reviewedAt: "2024-01-08",
-    category: "Machine Learning",
-    skills: ["Python", "TensorFlow", "Docker", "AWS"],
-    proofUrl: "https://github.com/user/ml-deployment",
-    certificateHash: "0x5678...efgh",
-  },
-  {
-    id: 5,
-    title: "DevOps Pipeline Implementation",
-    description: "Set up complete CI/CD pipeline with automated testing and deployment.",
-    status: "approved",
-    submittedAt: "2024-01-01",
-    reviewedAt: "2024-01-03",
-    category: "DevOps",
-    skills: ["Docker", "Kubernetes", "Jenkins", "AWS"],
-    proofUrl: "https://github.com/user/devops-pipeline",
-    certificateHash: "0x9abc...ijkl",
-  },
+  
 ]
 
 export default function OnChainPage() {
