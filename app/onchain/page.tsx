@@ -41,17 +41,7 @@ const mockCertifications: Certification[] = [
     proofUrl: "https://github.com/user/react-patterns-demo",
     certificateHash: "0x1234...abcd",
   },
-  {
-    id: 2,
-    title: "Smart Contract Security Audit",
-    description:
-      "Successfully completed security audit of a DeFi protocol, identifying and fixing critical vulnerabilities.",
-    status: "pending",
-    submittedAt: "2024-01-20",
-    category: "Blockchain Security",
-    skills: ["Solidity", "Security", "DeFi"],
-    proofUrl: "https://github.com/user/defi-audit-report",
-  },
+  
   {
     id: 3,
     title: "Full-Stack Application Architecture",
@@ -62,30 +52,7 @@ const mockCertifications: Certification[] = [
     category: "Full-Stack Development",
     skills: ["Node.js", "React", "Docker", "AWS"],
   },
-  {
-    id: 4,
-    title: "Machine Learning Model Deployment",
-    description: "Deployed ML models to production with proper monitoring and scaling capabilities.",
-    status: "approved",
-    submittedAt: "2024-01-05",
-    reviewedAt: "2024-01-08",
-    category: "Machine Learning",
-    skills: ["Python", "TensorFlow", "Docker", "AWS"],
-    proofUrl: "https://github.com/user/ml-deployment",
-    certificateHash: "0x5678...efgh",
-  },
-  {
-    id: 5,
-    title: "DevOps Pipeline Implementation",
-    description: "Set up complete CI/CD pipeline with automated testing and deployment.",
-    status: "approved",
-    submittedAt: "2024-01-01",
-    reviewedAt: "2024-01-03",
-    category: "DevOps",
-    skills: ["Docker", "Kubernetes", "Jenkins", "AWS"],
-    proofUrl: "https://github.com/user/devops-pipeline",
-    certificateHash: "0x9abc...ijkl",
-  },
+  
 ]
 
 export default function OnChainPage() {
@@ -143,7 +110,7 @@ export default function OnChainPage() {
   data.append("file", file);
 
   try {
-    const response = await fetch("/api/mint-cert", {
+    const response = await fetch("/api/onchain/mint-cert", {
       method: "POST",
       body: data,
     });
@@ -446,35 +413,37 @@ const rejectedCerts = allCerts.filter(cert => cert.status === "rejected");
                                 </div>
                               )}
                             </div>
+                            
                             <div className="flex gap-2">
-                              {cert.proofUrl && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="bg-gray-800/50 border-gray-600 text-gray-300"
-                                  onClick={() => window.open(cert.proofUrl, "_blank")}
-                                >
-                                  <ExternalLink className="w-4 h-4 mr-2" />
-                                  View Proof
-                                </Button>
-                              )}
-                              {cert.certificateHash && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="bg-orange-500/20 border-orange-500 text-orange-500"
-                                  onClick={() =>
-                                    window.open(
-                                      `https://testnet.marchain-explorer.com/tx/${cert.certificateHash}`,
-                                      "_blank"
-                                    )
-                                  }
-                                >
-                                  <FileText className="w-4 h-4 mr-2" />
-                                  Certificate
-                                </Button>
-                              )}
-                            </div>
+                                {cert.proofUrl && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="bg-gray-800/50 border-gray-600 text-gray-300"
+                                    onClick={() => window.open(cert.proofUrl, "_blank")}
+                                  >
+                                    <ExternalLink className="w-4 h-4 mr-2" />
+                                    View Proof
+                                  </Button>
+                                  )}
+                                  {cert.certificateHash && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="bg-orange-500/20 border-orange-500 text-orange-500"
+                                      onClick={() =>
+                                        window.open(
+                                          `https://explorer-testnet.maschain.com/${cert.certificateHash}`,
+                                          "_blank"
+                                        )
+                                        
+                                      }
+                                      >
+                                        <FileText className="w-4 h-4 mr-2" />
+                                        View Certificate
+                                      </Button>
+                                    )}
+                                  </div>
                           </div>
                         </CardContent>
                       </Card>
