@@ -1,6 +1,7 @@
+//bounties/page.tsx
 "use client"
 
-import { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -18,7 +19,9 @@ import {
   ArrowLeft,
   Upload,
   MessageCircle,
+  Trash,
 } from "lucide-react"
+import { toast } from 'sonner';
 
 interface Bounty {
   id: number
@@ -46,9 +49,11 @@ interface BountyHistory {
   tags: string[]
   submissionUrl?: string
   feedback?: string
+  claimed?: boolean
+  claimTxHash?: string
 }
 
-const mockBounties: Bounty[] = [
+const initialBounties: Bounty[] = [
   {
     id: 1,
     title: "Build a React Component Library",
@@ -148,6 +153,7 @@ const mockHistory: BountyHistory[] = [
     tags: ["React", "JavaScript", "CSS"],
     submissionUrl: "https://github.com/user/react-todo",
     feedback: "Excellent work! Clean code structure and great user experience.",
+    claimed: false,
   },
   {
     id: 2,
@@ -158,6 +164,7 @@ const mockHistory: BountyHistory[] = [
     description: "Building a decentralized NFT marketplace with Web3 integration, smart contracts, and modern UI.",
     tags: ["React", "Solidity", "Web3", "IPFS"],
     submissionUrl: "https://github.com/user/nft-marketplace",
+    claimed: false,
   },
   {
     id: 3,
@@ -168,6 +175,7 @@ const mockHistory: BountyHistory[] = [
     description: "Write a comprehensive blog post about advanced React patterns.",
     tags: ["Writing", "React", "Tutorial"],
     feedback: "Good start on the outline, but the submission was incomplete.",
+    claimed: false,
   },
 ]
 
@@ -176,6 +184,87 @@ export default function BountiesPage() {
   const [showHistoryDetails, setShowHistoryDetails] = useState(false)
   const [selectedBounty, setSelectedBounty] = useState<Bounty | null>(null)
   const [showBountyDetails, setShowBountyDetails] = useState(false)
+  const [showCreateBounty, setShowCreateBounty] = useState(false)
+  const [newBounty, setNewBounty] = useState({ title: '', description: '', reward: '', difficulty: '', tags: '' })
+  const [bounties, setBounties] = useState<Bounty[]>([])
+  const [userJourney, setUserJourney] = useState<BountyHistory[]>(mockHistory)
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+
+
+  // Load bounties and journey from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('userBounties')
+    let userBounties: Bounty[] = []
+    if (stored) {
+      try {
+        userBounties = JSON.parse(stored)
+      } catch {}
+    }
+    setBounties([...userBounties, ...initialBounties])
+    
+
+    // Load user journey from localStorage
+    const storedJourney = localStorage.getItem('userJourney')
+    if (storedJourney) {
+      try {
+        const parsedJourney = JSON.parse(storedJourney)
+        // Merge stored journey with mock history, preserving claimed status
+        const mergedJourney = mockHistory.map(mockItem => {
+          const storedItem = parsedJourney.find((item: BountyHistory) => 
+            item.title === mockItem.title && item.description === mockItem.description
+          )
+          return storedItem ? { ...mockItem, ...storedItem } : mockItem
+        })
+        setUserJourney([...parsedJourney.filter((item: BountyHistory) => 
+          !mockHistory.some(mock => mock.title === item.title && mock.description === item.description)
+        ), ...mergedJourney])
+      } catch {}
+    }
+  }, [])
+
+  useEffect(() => {
+    const getUserInfo = () => {
+      try {
+        const isLoggedIn = localStorage.getItem('is_logged_in');
+        if (isLoggedIn === 'true') {
+          const userData = localStorage.getItem('devspace_user');
+          if (userData) {
+            const user = JSON.parse(userData);
+            setWalletAddress(user.wallet);
+            return;
+          }
+        }
+        setWalletAddress(null);
+      } catch (error) {
+        console.error('Error retrieving user info:', error);
+        setWalletAddress(null);
+      }
+    };
+    getUserInfo();
+  }, []);
+  
+
+  // Save user-created bounties to localStorage whenever bounties change (only user bounties)
+  useEffect(() => {
+    // Only save bounties that are not in initialBounties (assume initialBounties have unique titles)
+    const userBounties = bounties.filter(b => !initialBounties.some(mb => mb.title === b.title && mb.description === b.description))
+    localStorage.setItem('userBounties', JSON.stringify(userBounties))
+  }, [bounties])
+
+  // Save user journey to localStorage whenever journey changes
+  useEffect(() => {
+    // Only save user-accepted bounties (not the mock ones)
+    const userAcceptedBounties = userJourney.filter(j => !mockHistory.some(mh => mh.title === j.title && mh.description === j.description))
+    localStorage.setItem('userJourney', JSON.stringify(userAcceptedBounties))
+  }, [userJourney])
+
+  // Test toast function to verify toast system is working
+  const testToast = () => {
+    console.log("Testing toast...");
+    toast.success("🎉 Test success toast!");
+    toast.error("❌ Test error toast!");
+    toast.loading("⏳ Test loading toast...");
+  };
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -226,12 +315,263 @@ export default function BountiesPage() {
     setSelectedHistory(null)
   }
 
+  const handleAcceptChallenge = (bounty: Bounty) => {
+    // Check if already accepted
+    const alreadyAccepted = userJourney.some(j => j.title === bounty.title)
+    if (alreadyAccepted) {
+      toast.error("You have already accepted this challenge!")
+      return
+    }
+
+    // Create new journey item
+    const newJourneyItem: BountyHistory = {
+      id: Date.now(),
+      title: bounty.title,
+      status: "in-progress",
+      reward: bounty.reward,
+      progress: 0,
+      description: bounty.description,
+      tags: bounty.tags,
+      submissionUrl: undefined,
+      feedback: undefined,
+      claimed: false,
+    }
+
+    // Add to journey
+    setUserJourney([newJourneyItem, ...userJourney])
+    
+    // Show success message
+    toast.success(`✅ Challenge accepted! "${bounty.title}" added to your journey.`)
+    
+    // Close bounty details if open
+    setShowBountyDetails(false)
+    setSelectedBounty(null)
+  }
+
+  const handleSubmitToReview = (historyItem: BountyHistory) => {
+    // Update the journey item to completed status
+    const updatedJourney = userJourney.map(item => 
+      item.id === historyItem.id 
+        ? {
+            ...item,
+            status: "completed" as const,
+            progress: 100,
+            completedAt: "Just now",
+            submissionUrl: "https://github.com/user/submission",
+            feedback: "Submission received! Review in progress..."
+          }
+        : item
+    )
+    
+    setUserJourney(updatedJourney)
+    
+    // Update the selected history item for immediate UI update
+    setSelectedHistory({
+      ...historyItem,
+      status: "completed",
+      progress: 100,
+      completedAt: "Just now",
+      submissionUrl: "https://github.com/user/submission",
+      feedback: "Submission received! Review in progress..."
+    })
+    
+    toast.success(`✅ Submission submitted for review! "${historyItem.title}" marked as completed.`)
+  }
+
+  const handleClaimPrize = async (historyItem: BountyHistory) => {
+    try {
+        // Check if prize has already been claimed
+        if (historyItem.claimed) {
+            toast.error("❌ Prize has already been claimed!");
+            return;
+        }
+
+        const storedUser = localStorage.getItem('devspace_user');
+        if (!storedUser) {
+            toast.error("❌ Please log in to claim your prize.");
+            return;
+        }
+        const parsedUser = JSON.parse(storedUser);
+        const recipient = parsedUser.wallet;
+        const contract = "0x4579c765c30121B253C452B0543203B617152Ae2"; // your MAS token contract
+
+        const prizeAmount = Math.floor(historyItem.reward * 0.5);
+        const loadingToastId = toast.loading(`⏳ Claiming your ${prizeAmount} MAS prize...`);
+
+        console.log("Claiming prize with:", { recipient, amount: prizeAmount, contract });
+
+        const res = await fetch('/api/claim', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                recipient,
+                amount: prizeAmount,
+                contract
+            })
+        });
+
+        const data = await res.json();
+        console.log("Claim API response:", data);
+
+        if (!res.ok || !data.success) {
+            console.error("Claim failed:", data);
+            toast.dismiss(loadingToastId);
+            toast.error(`❌ Claim failed: ${data.error || 'Transaction failed'}`);
+            return;
+        }
+
+        const explorerUrl = `https://explorer-testnet.maschain.com/${data.txHash}`;
+        console.log("Claim successful, showing success toast");
+
+        toast.dismiss(loadingToastId);
+        toast.success(
+            <span>
+                🎉 Prize claimed successfully!{" "}
+                <a href={explorerUrl} target="_blank" rel="noopener noreferrer" className="underline text-blue-300">
+                    View Transaction
+                </a>
+            </span>,
+            { duration: 8000 }
+        );
+
+        // Update user journey feedback to reflect claimed prize and mark as claimed
+        const updatedJourney = userJourney.map(item =>
+            item.id === historyItem.id
+                ? { ...item, feedback: `Prize claimed successfully! 🎉 TX: ${data.txHash}`, claimed: true, claimTxHash: data.txHash }
+                : item
+        );
+        setUserJourney(updatedJourney);
+        setSelectedHistory(prev => prev ? { ...prev, feedback: `Prize claimed successfully! 🎉 TX: ${data.txHash}`, claimed: true, claimTxHash: data.txHash } : prev);
+
+    } catch (error) {
+        console.error('Claim prize error:', error);
+        toast.error("❌ Failed to claim prize. Please try again.");
+    }
+};
+
+
+
+const handleCreateBounty = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  try {
+      const storedUser = localStorage.getItem('devspace_user');
+      if (!storedUser) {
+          toast.error("❌ Please log in to create a bounty.");
+          return;
+      }
+
+      const parsedUser = JSON.parse(storedUser);
+      const sender = parsedUser.wallet;
+      const recipient = "0x5E9C287CA011343B9CC8F30A30527bF6fede918b"; // escrow wallet
+      const contract = "0x4579c765c30121B253C452B0543203B617152Ae2";
+      const amount = parseInt(newBounty.reward.trim(), 10);
+
+      if (!newBounty.title || !newBounty.description || !newBounty.difficulty || isNaN(amount) || amount <= 0) {
+          toast.error("❌ Please fill in all fields correctly with a valid reward amount.");
+          return;
+      }
+      if (!sender) {
+          toast.error("❌ Wallet not found, please log in again.");
+          return;
+      }
+
+      console.log("Creating bounty with:", {
+          sender,
+          recipient,
+          amount,
+          contract
+      });
+
+      const loadingToast = toast.loading("⏳ Transferring tokens and creating bounty...");
+
+      const res = await fetch('/api/mint', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              sender,
+              recipient,
+              amount,
+              contract
+          })
+      });
+
+      const data = await res.json();
+      console.log("Mint/Transfer API response:", data);
+
+      if (!res.ok || !data.txHash) {
+          console.error("Bounty creation failed:", data);
+          toast.dismiss(loadingToast);
+          throw new Error(data.error || "Failed to create bounty on-chain. No transaction hash received.");
+      }
+
+      // Add to local bounties
+      const newBountyObject: Bounty = {
+          id: Date.now(),
+          title: newBounty.title,
+          description: newBounty.description,
+          reward: amount,
+          currency: "MAS",
+          difficulty: newBounty.difficulty as "Easy" | "Medium" | "Hard" | "Expert",
+          timeLeft: "14 days left",
+          participants: 0,
+          maxParticipants: 10,
+          tags: newBounty.tags ? newBounty.tags.split(",").map(tag => tag.trim()) : [],
+          sponsor: parsedUser.name || "Anonymous",
+          sponsorAvatar: "/placeholder.svg"
+      };
+
+      setBounties([newBountyObject, ...bounties]);
+      setNewBounty({ title: '', description: '', reward: '', difficulty: '', tags: '' });
+      setShowCreateBounty(false);
+
+      toast.dismiss(loadingToast);
+
+      // Create explorer URL with the transaction hash
+      const explorerUrl = `https://explorer-testnet.maschain.com/${data.txHash}`;
+      console.log("Bounty created successfully, showing success toast");
+
+      // Show success popup with transaction link
+      toast.success(
+          <span>
+              🎉 Bounty created successfully!{" "}
+              <a href={explorerUrl} target="_blank" rel="noopener noreferrer" className="underline text-blue-300">
+                  View Transaction
+              </a>
+          </span>,
+          { duration: 8000 }
+      );
+
+  } catch (error: any) {
+      console.error("Create Bounty Error:", error);
+      toast.error(`❌ Error: ${error.message}`);
+  }
+};
+
+  // Remove a bounty by id (and update localStorage)
+  function handleDeleteBounty(id: number) {
+    // Get the bounty details before deletion for the toast message
+    const bountyToDelete = bounties.find(b => b.id === id);
+    const bountyTitle = bountyToDelete?.title || "Bounty";
+    
+    const updated = bounties.filter(b => b.id !== id);
+    setBounties(updated);
+    // Only save user-created bounties
+    const userBounties = updated.filter(b => !initialBounties.some(mb => mb.title === b.title && mb.description === b.description));
+    localStorage.setItem('userBounties', JSON.stringify(userBounties));
+    setShowBountyDetails(false);
+    setSelectedBounty(null);
+    
+    // Show success toast
+    toast.success(`🗑️ "${bountyTitle}" has been deleted successfully!`);
+  }
+
   return (
     <div className="min-h-screen space-bg">
-      <div className="flex h-screen">
+      <div className="flex flex-row w-full">
         {/* Main Content */}
         <div className="flex-1 overflow-y-auto space-bg bounties-scroll-area">
-          <div className="p-6 min-h-full">
+          <div className="p-6">
             {!showHistoryDetails && !showBountyDetails ? (
               <>
                 {/* Banner */}
@@ -247,6 +587,14 @@ export default function BountiesPage() {
                         <span className="text-2xl font-bold">2,450</span>
                       </div>
                       <p className="opacity-90">Total Earned</p>
+                      {/* Temporary test button */}
+                      <Button 
+                        onClick={testToast} 
+                        className="mt-2 bg-black text-white hover:bg-gray-800"
+                        size="sm"
+                      >
+                        Test Toast
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -256,21 +604,21 @@ export default function BountiesPage() {
                   <Card className="space-card">
                     <CardContent className="p-4 text-center">
                       <Target className="w-8 h-8 text-orange-500 mx-auto mb-2" />
-                      <div className="text-2xl font-bold text-white">15</div>
+                      <div className="text-2xl font-bold text-white">{bounties.length}</div>
                       <div className="text-sm text-gray-400">Active Bounties</div>
                     </CardContent>
                   </Card>
                   <Card className="space-card">
                     <CardContent className="p-4 text-center">
                       <Award className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                      <div className="text-2xl font-bold text-white">8</div>
+                      <div className="text-2xl font-bold text-white">{userJourney.filter(item => item.status === 'completed').length}</div>
                       <div className="text-sm text-gray-400">Completed</div>
                     </CardContent>
                   </Card>
                   <Card className="space-card">
                     <CardContent className="p-4 text-center">
                       <Zap className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-                      <div className="text-2xl font-bold text-white">3</div>
+                      <div className="text-2xl font-bold text-white">{userJourney.filter(item => item.status === 'in-progress').length}</div>
                       <div className="text-sm text-gray-400">In Progress</div>
                     </CardContent>
                   </Card>
@@ -282,6 +630,42 @@ export default function BountiesPage() {
                     </CardContent>
                   </Card>
                 </div>
+
+                {/* Create Bounty Section styled like OnChain - moved above Available Bounties */}
+                <Card className="space-card mt-8 mb-8">
+                  <CardContent className="p-6">
+                    {!showCreateBounty ? (
+                      <div className="text-center">
+                        <h3 className="text-xl font-semibold text-white mb-2">Create New Bounty</h3>
+                        <p className="text-gray-400 mb-4">Post a challenge and reward the community for solving it!</p>
+                        <Button
+                          onClick={() => setShowCreateBounty(true)}
+                          className="gradient-orange text-black font-medium hover:glow-orange px-8 py-3 text-lg"
+                        >
+                          <span className="mr-2 text-xl font-bold">+</span> Create Bounty
+                        </Button>
+                      </div>
+                    ) : (
+                      <form className="space-y-4 max-w-xl mx-auto" onSubmit={handleCreateBounty}>
+                        <input className="w-full p-2 rounded bg-gray-800 text-white" placeholder="Title" value={newBounty.title} onChange={e => setNewBounty({ ...newBounty, title: e.target.value })} required />
+                        <textarea className="w-full p-2 rounded bg-gray-800 text-white" placeholder="Description" value={newBounty.description} onChange={e => setNewBounty({ ...newBounty, description: e.target.value })} required />
+                        <input className="w-full p-2 rounded bg-gray-800 text-white" placeholder="Reward (MAS)" type="number" min="0" value={newBounty.reward} onChange={e => setNewBounty({ ...newBounty, reward: e.target.value })} required />
+                        <select className="w-full p-2 rounded bg-gray-800 text-white" value={newBounty.difficulty} onChange={e => setNewBounty({ ...newBounty, difficulty: e.target.value })} required>
+                          <option value="">Select Difficulty</option>
+                          <option value="Easy">Easy</option>
+                          <option value="Medium">Medium</option>
+                          <option value="Hard">Hard</option>
+                          <option value="Expert">Expert</option>
+                        </select>
+                        <input className="w-full p-2 rounded bg-gray-800 text-white" placeholder="Tags (comma separated)" value={newBounty.tags} onChange={e => setNewBounty({ ...newBounty, tags: e.target.value })} />
+                        <div className="flex gap-2 justify-end">
+                          <Button type="button" variant="ghost" className="text-gray-400" onClick={() => setShowCreateBounty(false)}>Cancel</Button>
+                          <Button type="submit" className="gradient-orange text-black font-medium hover:glow-orange">Create</Button>
+                        </div>
+                      </form>
+                    )}
+                  </CardContent>
+                </Card>
 
                 {/* Available Bounties Header */}
                 <div className="flex items-center justify-between mb-6">
@@ -298,7 +682,7 @@ export default function BountiesPage() {
 
                 {/* Two Column Bounties Layout */}
                 <div className="grid grid-cols-2 gap-6 pb-20 max-h-[600px] overflow-y-auto pr-2 hide-scrollbar">
-                  {mockBounties.map((bounty) => (
+                  {bounties.map((bounty) => (
                     <Card key={bounty.id} className="space-card cursor-pointer" onClick={() => handleBountyClick(bounty)}>
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between mb-3">
@@ -308,7 +692,7 @@ export default function BountiesPage() {
                           <div className="text-right">
                             <div className="flex items-center gap-1 text-green-500 font-bold">
                               <DollarSign className="w-4 h-4" />
-                              {bounty.reward} {bounty.currency}
+                              {bounty.reward} MAS
                             </div>
                           </div>
                         </div>
@@ -342,8 +726,15 @@ export default function BountiesPage() {
                             <span>{bounty.sponsor}</span>
                           </div>
                         </div>
-                        <Button className="w-full gradient-orange text-black font-medium hover:glow-orange">
-                          Accept Challenge
+                        <Button 
+                          className="w-full gradient-orange text-black font-medium hover:glow-orange"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAcceptChallenge(bounty);
+                          }}
+                          disabled={userJourney.some(j => j.title === bounty.title)}
+                        >
+                          {userJourney.some(j => j.title === bounty.title) ? 'Already Accepted' : 'Accept Challenge'}
                         </Button>
                       </CardContent>
                     </Card>
@@ -360,16 +751,15 @@ export default function BountiesPage() {
                     className="text-orange-500 hover:text-orange-400"
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Bounties
                   </Button>
                   <h1 className="text-3xl font-bold text-white">Challenge Details</h1>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Left Column - Main Details */}
-                  <div className="space-y-6">
+                  <div className="space-y-6 w-full">
                     {/* Challenge Overview */}
-                    <Card className="space-card">
+                    <Card className="space-card w-full">
                       <CardHeader>
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -389,11 +779,23 @@ export default function BountiesPage() {
                                 </Badge>
                               ))}
                             </div>
+                            {/* Submit to Review Button - only show for in-progress challenges */}
+                            {selectedHistory.status === "in-progress" && (
+                              <div className="mb-6">
+                                <Button 
+                                  onClick={() => handleSubmitToReview(selectedHistory)}
+                                  className="gradient-orange text-black font-medium hover:glow-orange px-8 py-3"
+                                >
+                                  <Upload className="w-4 h-4 mr-2" />
+                                  Submit to Review
+                                </Button>
+                              </div>
+                            )}
                           </div>
                           <div className="text-right ml-6">
                             <div className="flex items-center gap-2 mb-2">
                               <DollarSign className="w-6 h-6 text-green-500" />
-                              <span className="text-3xl font-bold text-green-500">${selectedHistory.reward}</span>
+                              <span className="text-3xl font-bold text-green-500">${selectedHistory.reward} MAS</span>
                             </div>
                             <p className="text-gray-400">Reward</p>
                           </div>
@@ -499,6 +901,108 @@ export default function BountiesPage() {
 
                   {/* Right Column - Additional Info */}
                   <div className="space-y-6">
+                    {/* Top 3 Projects - only show for completed challenges */}
+                    {selectedHistory.status === "completed" && (
+                      <Card className="space-card">
+                        <CardHeader>
+                          <CardTitle className="text-orange-500 flex items-center gap-2">
+                            <Trophy className="w-5 h-5" />
+                            Top 3 Projects
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          {/* 1st Place - User */}
+                          <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
+                                  <span className="text-white font-bold text-sm">1</span>
+                                </div>
+                                <div>
+                                  <h4 className="text-white font-semibold">You</h4>
+                                  <p className="text-yellow-400 text-sm">🏆 First Place</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-green-500 font-bold text-lg">{Math.floor(selectedHistory.reward * 0.5)} MAS</div>
+                                <div className="text-yellow-400 text-sm">50% of Prize</div>
+                              </div>
+                            </div>
+                            {selectedHistory.claimed ? (
+                              <div className="space-y-3">
+                                <Button 
+                                  disabled
+                                  className="w-full bg-gray-600 text-gray-300 cursor-not-allowed"
+                                >
+                                  <Trophy className="w-4 h-4 mr-2" />
+                                  Prize Claimed ✓
+                                </Button>
+                                {selectedHistory.claimTxHash && (
+                                  <div className="text-center">
+                                    <p className="text-xs text-gray-400 mb-1">Transaction Hash:</p>
+                                    <a 
+                                      href={`https://explorer-testnet.maschain.com/${selectedHistory.claimTxHash}`}
+                                      target="_blank" 
+                                      rel="noopener noreferrer" 
+                                      className="text-blue-300 hover:text-blue-200 underline text-xs"
+                                    >
+                                      {selectedHistory.claimTxHash.substring(0, 10)}...{selectedHistory.claimTxHash.substring(selectedHistory.claimTxHash.length - 8)}
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <Button 
+                                onClick={() => handleClaimPrize(selectedHistory)}
+                                className="w-full gradient-orange text-black font-medium hover:glow-orange"
+                              >
+                                <Trophy className="w-4 h-4 mr-2" />
+                                Claim Your Prize
+                              </Button>
+                            )}
+                          </div>
+
+                          {/* 2nd Place */}
+                          <div className="bg-gray-800/30 border border-gray-700 rounded-lg p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">
+                                  <span className="text-white font-bold text-sm">2</span>
+                                </div>
+                                <div>
+                                  <h4 className="text-white font-semibold">Alex Chen</h4>
+                                  <p className="text-gray-400 text-sm">Runner Up</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-green-500 font-bold text-lg">{Math.floor(selectedHistory.reward * 0.3)} MAS</div>
+                                <div className="text-gray-400 text-sm">30% of Prize</div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 3rd Place */}
+                          <div className="bg-gray-800/30 border border-gray-700 rounded-lg p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center">
+                                  <span className="text-white font-bold text-sm">3</span>
+                                </div>
+                                <div>
+                                  <h4 className="text-white font-semibold">Sarah Kim</h4>
+                                  <p className="text-gray-400 text-sm">Third Place</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-green-500 font-bold text-lg">{Math.floor(selectedHistory.reward * 0.2)} MAS</div>
+                                <div className="text-gray-400 text-sm">20% of Prize</div>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
                     {/* Submission Details */}
                     {selectedHistory.submissionUrl && (
                       <Card className="space-card">
@@ -593,7 +1097,7 @@ export default function BountiesPage() {
                             <p className="text-gray-400 text-xs">Build complex components with render props</p>
                             <div className="flex items-center justify-between mt-2">
                               <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500">Medium</Badge>
-                              <span className="text-green-500 text-sm">$250</span>
+                              <span className="text-green-500 text-sm">250 MAS</span>
                             </div>
                           </div>
 
@@ -602,7 +1106,7 @@ export default function BountiesPage() {
                             <p className="text-gray-400 text-xs">Write comprehensive tests for React apps</p>
                             <div className="flex items-center justify-between mt-2">
                               <Badge className="bg-green-500/20 text-green-400 border-green-500">Easy</Badge>
-                              <span className="text-green-500 text-sm">$150</span>
+                              <span className="text-green-500 text-sm">150 MAS</span>
                             </div>
                           </div>
 
@@ -611,7 +1115,7 @@ export default function BountiesPage() {
                             <p className="text-gray-400 text-xs">Add backend API and database</p>
                             <div className="flex items-center justify-between mt-2">
                               <Badge className="bg-orange-500/20 text-orange-400 border-orange-500">Hard</Badge>
-                              <span className="text-green-500 text-sm">$400</span>
+                              <span className="text-green-500 text-sm">400 MAS</span>
                             </div>
                           </div>
                         </div>
@@ -645,103 +1149,85 @@ export default function BountiesPage() {
             ) : showBountyDetails && selectedBounty ? (
               /* Bounty Details View */
               <div className="min-h-full">
-                <div className="flex items-center gap-4 mb-6">
-                  <Button
-                    variant="ghost"
-                    onClick={handleBackToBounties}
-                    className="text-orange-500 hover:text-orange-400"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Bounties
-                  </Button>
-                  <h1 className="text-3xl font-bold text-white">Bounty Details</h1>
+                <div className="flex items-center justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-4">
+                    <Button
+                      variant="ghost"
+                      onClick={handleBackToBounties}
+                      className="text-orange-500 hover:text-orange-400"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                    </Button>
+                    <h1 className="text-3xl font-bold text-white">Bounty Details</h1>
+                  </div>
+                  {/* Show trash icon only for user-created bounties */}
+                  {selectedBounty && !initialBounties.some(mb => mb.title === selectedBounty.title && mb.description === selectedBounty.description) && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleDeleteBounty(selectedBounty.id)}
+                      className="text-red-500 hover:text-red-400"
+                      title="Delete Bounty"
+                    >
+                      <Trash className="w-6 h-6" />
+                    </Button>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Left Column - Main Details */}
-                  <div className="space-y-6">
-                    {/* Challenge Overview */}
-                    <Card className="space-card">
+                <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+                  <div className="w-full">
+                    <Card className="space-card max-w-full mx-auto w-full">
                       <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-4">
-                              <CardTitle className="text-2xl text-white">{selectedBounty.title}</CardTitle>
-                              <Badge className={getDifficultyColor(selectedBounty.difficulty)}>
-                                {selectedBounty.difficulty}
-                              </Badge>
+                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 mb-2">
+                              <CardTitle className="text-3xl font-bold text-white leading-tight">{selectedBounty.title}</CardTitle>
                             </div>
-                            <p className="text-gray-300 mb-6 text-lg leading-relaxed">
-                              {selectedBounty.description}
-                            </p>
-                            <div className="flex gap-2 mb-6">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Avatar className="w-10 h-10">
+                                <AvatarImage src={selectedBounty.sponsorAvatar || "/placeholder.svg"} />
+                                <AvatarFallback className="text-lg">{selectedBounty.sponsor[0]}</AvatarFallback>
+                              </Avatar>
+                              <span className="text-white font-semibold text-lg">{selectedBounty.sponsor}</span>
+                            </div>
+                            <p className="text-gray-300 mb-4 text-lg leading-relaxed">{selectedBounty.description}</p>
+                            <div className="flex gap-2 mb-4 flex-wrap">
                               {selectedBounty.tags.map((tag) => (
-                                <Badge key={tag} variant="secondary" className="bg-gray-800/50 text-gray-300">
+                                <Badge key={tag} variant="secondary" className="bg-gray-800/50 text-gray-300 text-base px-3 py-1">
                                   {tag}
                                 </Badge>
                               ))}
                             </div>
                           </div>
-                          <div className="text-right ml-6">
-                            <div className="flex items-center gap-2 mb-2">
-                              <DollarSign className="w-6 h-6 text-green-500" />
-                              <span className="text-3xl font-bold text-green-500">{selectedBounty.reward} {selectedBounty.currency}</span>
+                          <div className="flex flex-col items-end gap-2 min-w-[200px]">
+                            <Badge className={getDifficultyColor(selectedBounty.difficulty)}>{selectedBounty.difficulty}</Badge>
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="text-green-500 text-3xl font-extrabold">$</span>
+                              <span className="text-4xl font-extrabold text-green-500">{selectedBounty.reward} MAS</span>
                             </div>
-                            <p className="text-gray-400">Reward</p>
+                            <span className="text-gray-400 text-lg">Reward</span>
                           </div>
                         </div>
                       </CardHeader>
-                    </Card>
-
-                    {/* Participants & Sponsor */}
-                    <Card className="space-card">
-                      <CardHeader>
-                        <CardTitle className="text-orange-500 flex items-center gap-2">
-                          <Users className="w-5 h-5" />
-                          Participants
-                        </CardTitle>
-                      </CardHeader>
                       <CardContent>
-                        <div className="flex items-center gap-4 mb-2">
-                          <span className="text-white font-medium">{selectedBounty.participants}</span>
-                          <span className="text-gray-400">/ {selectedBounty.maxParticipants} joined</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                          <div className="flex flex-col gap-2">
+                            <span className="text-gray-400 text-base">Participants</span>
+                            <span className="text-white font-semibold text-xl">{selectedBounty.participants} / {selectedBounty.maxParticipants}</span>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            <span className="text-gray-400 text-base">Time Left</span>
+                            <span className="text-white font-semibold text-xl">{selectedBounty.timeLeft}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Avatar className="w-8 h-8">
-                            <AvatarImage src={selectedBounty.sponsorAvatar || "/placeholder.svg"} />
-                            <AvatarFallback className="text-xs">{selectedBounty.sponsor[0]}</AvatarFallback>
-                          </Avatar>
-                          <span className="text-white font-medium">{selectedBounty.sponsor}</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Time Left */}
-                    <Card className="space-card">
-                      <CardHeader>
-                        <CardTitle className="text-orange-500 flex items-center gap-2">
-                          <Clock className="w-5 h-5" />
-                          Time Left
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <span className="text-white font-medium text-lg">{selectedBounty.timeLeft}</span>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Right Column - Action */}
-                  <div className="space-y-6">
-                    <Card className="space-card">
-                      <CardHeader>
-                        <CardTitle className="text-orange-500 flex items-center gap-2">
-                          <Trophy className="w-5 h-5" />
-                          Accept Challenge
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Button className="w-full gradient-orange text-black font-medium hover:glow-orange">
-                          Accept Challenge
+                        <Button 
+                          className="w-full gradient-orange text-black font-medium hover:glow-orange"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAcceptChallenge(selectedBounty);
+                          }}
+                          disabled={userJourney.some(j => j.title === selectedBounty.title)}
+                        >
+                          {userJourney.some(j => j.title === selectedBounty.title) ? 'Already Accepted' : 'Accept Challenge'}
                         </Button>
                       </CardContent>
                     </Card>
@@ -753,7 +1239,7 @@ export default function BountiesPage() {
         </div>
 
         {/* Right Panel - Bounty History */}
-        <div className="w-80 space-bg border-l border-orange-500/20 overflow-y-auto bounties-scroll-area">
+        <div className="w-96 space-bg border-l border-orange-500/20 overflow-y-auto bounties-scroll-area flex-shrink-0">
           <div className="p-6 min-h-full">
             <div className="flex items-center gap-2 mb-6">
               <History className="w-5 h-5 text-orange-500" />
@@ -761,7 +1247,7 @@ export default function BountiesPage() {
             </div>
 
             <div className="space-y-4">
-              {mockHistory.map((item) => (
+              {userJourney.map((item) => (
                 <Card key={item.id} className="space-card cursor-pointer" onClick={() => handleHistoryClick(item)}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-2">
@@ -771,7 +1257,7 @@ export default function BountiesPage() {
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-green-500 font-medium">${item.reward}</span>
+                      <span className="text-green-500 font-medium">{item.reward} MAS</span>
                       {item.completedAt && <span className="text-xs text-gray-400">{item.completedAt}</span>}
                     </div>
                     <div className="space-y-1">

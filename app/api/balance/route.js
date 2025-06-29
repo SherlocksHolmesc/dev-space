@@ -1,7 +1,7 @@
 import { checkBalance } from '/app/wallet/maschain.js';
 
 export async function GET(request) {
-  const contract = '0x958259660877ae9f9aE665f78c4a7B8EbD247B44';
+  const contract = '0x4579c765c30121B253C452B0543203B617152Ae2';
   
   try {
     // Get wallet address from query parameters

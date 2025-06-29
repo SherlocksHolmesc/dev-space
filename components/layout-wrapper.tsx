@@ -4,6 +4,7 @@ import React from "react"
 import { usePathname } from "next/navigation"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
+import { Toaster } from "@/components/ui/sonner"
 
 interface LayoutWrapperProps {
   children: React.ReactNode
@@ -17,7 +18,12 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
   
   if (isAuthPage) {
     // Auth pages without sidebar
-    return <main className="w-full space-bg min-h-screen">{children}</main>
+    return (
+      <main className="w-full space-bg min-h-screen">
+        {children}
+        <Toaster />
+      </main>
+    )
   }
   
   // Other pages with sidebar
@@ -27,6 +33,7 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
         <AppSidebar />
         <main className="relative flex-1 pl-16 h-screen overflow-y-auto">{children}</main>
       </div>
+      <Toaster />
     </SidebarProvider>
   )
 } 

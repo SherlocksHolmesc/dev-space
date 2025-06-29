@@ -56,7 +56,8 @@ export async function fetchTxHistory(addr, contract, filter = 'to|from', status 
           wallet_address: addr,
           contract_address: contract,
           filter,
-          status
+          status,
+          block: 'pending'
       }
   });
 
