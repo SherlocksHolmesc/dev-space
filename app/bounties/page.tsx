@@ -258,14 +258,6 @@ export default function BountiesPage() {
     localStorage.setItem('userJourney', JSON.stringify(userAcceptedBounties))
   }, [userJourney])
 
-  // Test toast function to verify toast system is working
-  const testToast = () => {
-    console.log("Testing toast...");
-    toast.success("🎉 Test success toast!");
-    toast.error("❌ Test error toast!");
-    toast.loading("⏳ Test loading toast...");
-  };
-
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case "Easy":
@@ -587,14 +579,6 @@ const handleCreateBounty = async (e: React.FormEvent) => {
                         <span className="text-2xl font-bold">2,450</span>
                       </div>
                       <p className="opacity-90">Total Earned</p>
-                      {/* Temporary test button */}
-                      <Button 
-                        onClick={testToast} 
-                        className="mt-2 bg-black text-white hover:bg-gray-800"
-                        size="sm"
-                      >
-                        Test Toast
-                      </Button>
                     </div>
                   </div>
                 </div>
