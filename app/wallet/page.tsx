@@ -81,15 +81,7 @@ export default function WalletPage() {
           setHistory([]); // fallback gracefully
           return;
         }
-        
-        // Sort history by timestamp from latest to earliest
-        const sortedHistory = json.history.sort((a: any, b: any) => {
-          const timestampA = new Date(a.timestamp).getTime();
-          const timestampB = new Date(b.timestamp).getTime();
-          return timestampB - timestampA; // Latest first
-        });
-        
-        setHistory(sortedHistory);
+        setHistory(json.history);
       } catch (err: any) {
         console.error(err.message);
         setHistory([]);

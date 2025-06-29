@@ -1,8 +1,9 @@
-import type React from "react"
+ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { LayoutWrapper } from "@/components/layout-wrapper"
+import { Toaster } from "sonner"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -19,8 +20,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={inter.className}>
+      <body className={inter.className}> 
         <LayoutWrapper>{children}</LayoutWrapper>
+        <Toaster position="top-right" richColors />
       </body>
     </html>
   )
