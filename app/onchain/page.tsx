@@ -446,35 +446,37 @@ const rejectedCerts = allCerts.filter(cert => cert.status === "rejected");
                                 </div>
                               )}
                             </div>
+                            
                             <div className="flex gap-2">
-                              {cert.proofUrl && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="bg-gray-800/50 border-gray-600 text-gray-300"
-                                  onClick={() => window.open(cert.proofUrl, "_blank")}
-                                >
-                                  <ExternalLink className="w-4 h-4 mr-2" />
-                                  View Proof
-                                </Button>
-                              )}
-                              {cert.certificateHash && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="bg-orange-500/20 border-orange-500 text-orange-500"
-                                  onClick={() =>
-                                    window.open(
-                                      `https://testnet.marchain-explorer.com/tx/${cert.certificateHash}`,
-                                      "_blank"
-                                    )
-                                  }
-                                >
-                                  <FileText className="w-4 h-4 mr-2" />
-                                  Certificate
-                                </Button>
-                              )}
-                            </div>
+                                {cert.proofUrl && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="bg-gray-800/50 border-gray-600 text-gray-300"
+                                    onClick={() => window.open(cert.proofUrl, "_blank")}
+                                  >
+                                    <ExternalLink className="w-4 h-4 mr-2" />
+                                    View Proof
+                                  </Button>
+                                  )}
+                                  {cert.certificateHash && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="bg-orange-500/20 border-orange-500 text-orange-500"
+                                      onClick={() =>
+                                        window.open(
+                                          `https://explorer-testnet.maschain.com/${cert.certificateHash}`,
+                                          "_blank"
+                                        )
+                                        
+                                      }
+                                      >
+                                        <FileText className="w-4 h-4 mr-2" />
+                                        View Certificate
+                                      </Button>
+                                    )}
+                                  </div>
                           </div>
                         </CardContent>
                       </Card>
