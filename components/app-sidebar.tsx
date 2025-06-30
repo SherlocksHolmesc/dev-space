@@ -32,16 +32,16 @@ const menuItems = [
     description: "Your Journey",
   },
   {
-    title: "Wallet",
-    url: "/wallet",
-    icon: Wallet,
-    description: "Manage Funds",
-  },
-  {
     title: "Leaderboard",
     url: "/leaderboard",
     icon: Star,
     description: "Top Users & Rewards",
+  },
+  {
+    title: "Wallet",
+    url: "/wallet",
+    icon: Wallet,
+    description: "Manage Funds",
   },
 ]
 
