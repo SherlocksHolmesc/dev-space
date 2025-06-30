@@ -443,18 +443,18 @@ const rejectedCerts = allCerts.filter(cert => cert.status === "rejected");
                             </div>
                             
                             <div className="flex gap-2">
-                                {cert.proofUrl && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="bg-gray-800/50 border-gray-600 text-gray-300"
-                                    onClick={() => window.open(cert.proofUrl, "_blank")}
-                                  >
-                                    <ExternalLink className="w-4 h-4 mr-2" />
-                                    View Proof
-                                  </Button>
+                                  {cert.status !== "pending" && cert.proofUrl && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="bg-gray-800/50 border-gray-600 text-gray-300"
+                                      onClick={() => window.open(cert.proofUrl, "_blank")}
+                                    >
+                                      <ExternalLink className="w-4 h-4 mr-2" />
+                                      View Proof
+                                    </Button>
                                   )}
-                                  {cert.certificateHash && (
+                                  {cert.status !== "pending" && cert.certificateHash && (
                                     <Button
                                       variant="outline"
                                       size="sm"
@@ -464,14 +464,13 @@ const rejectedCerts = allCerts.filter(cert => cert.status === "rejected");
                                           `https://explorer-testnet.maschain.com/${cert.certificateHash}`,
                                           "_blank"
                                         )
-                                        
                                       }
-                                      >
-                                        <FileText className="w-4 h-4 mr-2" />
-                                        View Certificate
-                                      </Button>
-                                    )}
-                                  </div>
+                                >
+                                  <FileText className="w-4 h-4 mr-2" />
+                                  View Certificate
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
