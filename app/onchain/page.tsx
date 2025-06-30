@@ -120,20 +120,29 @@ export default function OnChainPage() {
     alert("Certificate minted on-chain successfully!");
 
 // Immediately add to localCerts for instant display
-setLocalCerts(prev => [
-  {
-    id: result.result.result.nft_token_id ?? Date.now(),
-    title: formData.title,
-    description: formData.description,
-    status: "pending",
-    submittedAt: new Date().toISOString(),
-    category: formData.category,
-    skills: formData.skills.split(',').map(s => s.trim()),
-    proofUrl: formData.proofUrl ?? result.result.result.certificate_image,
-    certificateHash: result.result.result.transactionHash,
-  },
-  ...prev
-]);
+ const newCert: Certification = {
+      id: result.result.result.nft_token_id ?? Date.now(),
+      title: formData.title,
+      description: formData.description,
+      status: "pending",
+      submittedAt: new Date().toISOString(),
+      category: formData.category,
+      skills: formData.skills.split(',').map(s => s.trim()),
+      proofUrl: formData.proofUrl ?? result.result.result.certificate_image,
+      certificateHash: result.result.result.transactionHash,
+    };
+
+    setLocalCerts(prev => [newCert, ...prev]);
+
+    // Auto-approve after 5 seconds
+    setTimeout(() => {
+      setLocalCerts(prev =>
+        prev.map(cert =>
+          cert.id === newCert.id ? { ...cert, status: "approved", reviewedAt: new Date().toISOString() } : cert
+        )
+      );
+    }, 5000);
+
 
 // Reset form
 setShowSubmitForm(false);
