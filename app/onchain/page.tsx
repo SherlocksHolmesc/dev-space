@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Shield, Upload, CheckCircle, Clock, XCircle, Award, FileText, ExternalLink, Plus, Zap } from "lucide-react"
 import {useCertificates} from "@/hooks/useCertificates";
+import { useEffect } from "react";
+
 
 
 interface Certification {
@@ -160,7 +162,24 @@ setFile(null);
   }
 };
 
-  const [localCerts, setLocalCerts] = useState<Certification[]>([]);
+  const [localCerts, setLocalCerts] = useState<Certification[]>(() => {
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("localCerts");
+    if (stored) {
+      try {
+        return JSON.parse(stored) as Certification[];
+      } catch (e) {
+        console.error("❌ Error parsing localCerts from localStorage:", e);
+      }
+    }
+  }
+  return [];
+});
+useEffect(() => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("localCerts", JSON.stringify(localCerts));
+  }
+}, [localCerts]);
 
   const wallet_address = "0x84f18Ed49Ecb64080e40e9b036c59034b85FC39c";
   const contract_address = "0x01E9de0DeF4Ba278202bF4bAD0103215b8027734";
