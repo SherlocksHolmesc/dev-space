@@ -37,6 +37,12 @@ const menuItems = [
     icon: Wallet,
     description: "Manage Funds",
   },
+  {
+    title: "Leaderboard",
+    url: "/leaderboard",
+    icon: Star,
+    description: "Top Users & Rewards",
+  },
 ]
 
 export function AppSidebar() {
